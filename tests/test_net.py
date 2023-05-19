@@ -9,12 +9,29 @@ def test_build():
 
     assert root.data == "a"
     assert len(root.children) == 2
+    assert (left, None) in root.children
+    assert (right, None) in root.children
 
-    assert left in root.children
-    assert right in root.children
 
-    assert root.children[left] is None
-    assert root.children[right] is None
+def test_edges():
+    end = Net("e")
+    mid = Net("d").add(end, "last edge")
+    left = Net("b").add(mid)
+    right = Net("c")
+    root = Net("a").add(left, "edge 1").add(right, "edge 2")
+
+    assert (left, "edge 1") in root.children
+    assert (right, "edge 2") in root.children
+    assert (mid, None) in left.children
+    assert (end, "last edge") in mid.children
+
+
+def test_repeat():
+    root = Net().add(Net()).add(Net())
+
+    assert len(root.children) == 2
+    assert root.children[0] == (Net(), None)
+    assert root.children[1] == (Net(), None)
 
 
 def test_eq():
@@ -34,42 +51,25 @@ def test_eq():
     assert root1 != root3
     assert root2 != root3
 
-    merge1_sub = Net("x")
-    merge1 = Net("a") \
-        .add(Net("b").add(merge1_sub)) \
-        .add(Net("c").add(merge1_sub))
+    subtree1 = Net().add(Net()).add(Net())
+    subtree2 = Net().add(Net())
+    repeat1 = Net().add(subtree1).add(subtree1)
+    repeat2 = Net().add(subtree1).add(subtree1)
 
-    merge2_sub = Net("x")
-    merge2 = Net("a") \
-        .add(Net("b").add(merge2_sub)) \
-        .add(Net("c").add(merge2_sub))
-
-    assert merge1 == merge2
-
-
-def test_edges():
-    end = Net("e")
-    mid = Net("d").add(end, "last edge")
-    left = Net("b").add(mid)
-    right = Net("c")
-    root = Net("a").add(left, "edge 1").add(right, "edge 2")
-
-    assert root.children[left] == "edge 1"
-    assert root.children[right] == "edge 2"
-    assert left.children[mid] is None
-    assert mid.children[end] == "last edge"
+    assert subtree1 != subtree2
+    assert repeat1 == repeat2
 
 
 def test_modify():
     root = Net("a")
     left = Net("b")
 
-    root.replace("w")
+    root.attach("w")
     assert root.data == "a"
 
-    root = root.replace("w")
+    root = root.attach("w")
     assert root.data == "w"
-    root = root.replace("a")
+    root = root.attach("a")
 
     root.add(left)
     assert root == Net("a")
@@ -77,20 +77,14 @@ def test_modify():
     root = root.add(left)
     assert root == Net("a").add(Net("b"))
 
-    root.add(left, "data")
-    assert root.children[left] is None
-
     root = root.add(left, "data")
-    assert root.children[left] == "data"
+    assert root == Net("a").add(Net("b")).add(Net("b"), "data")
 
-    root.discard(left)
-    assert root.children[left] == "data"
+    root.remove(left)
+    assert root == Net("a").add(Net("b")).add(Net("b"), "data")
 
-    root = root.discard(left)
-    assert left not in root.children
-
-    with pytest.raises(KeyError):
-        root.remove(left)
+    root = root.remove(left)
+    assert root == Net("a")
 
 
 def test_hashable():

@@ -1,5 +1,4 @@
 from typing import Hashable
-from collections import OrderedDict
 
 class Net:
     __slots__ = ["_data", "_children", "_hash"]
@@ -10,7 +9,7 @@ class Net:
         children: tuple[tuple["Net", Hashable]] = ()
     ):
         self._data = data
-        self._children = OrderedDict(children)
+        self._children = children
         self._hash = hash((data, *children))
 
     @property
@@ -41,18 +40,16 @@ class Net:
         """Add or replace a link to another node."""
         return Net(
             data=self._data,
-            children=self._children | {child: data},
+            children=self._children + ((child, data),),
         )
 
-    def remove(self, child: "Net") -> "Net":
-        """Remove a link to a node."""
-        if child not in self._children:
-            raise KeyError(child)
-
-        return self.discard(child)
-
-    def discard(self, child: "Net") -> "Net":
-        """Remove a link to a node, if one exists."""
-        copy = self._children.copy()
-        copy.pop(child, None)
-        return Net(data=self._data, children=copy)
+    def remove(self, target: "Net") -> "Net":
+        """Remove all links to a node."""
+        return Net(
+            data=self._data,
+            children=tuple(
+                (child, data)
+                for child, data in self._children
+                if child != target
+            ),
+        )
