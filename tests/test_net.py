@@ -26,7 +26,13 @@ def test_eq():
         .add(Net("b").add(Net("d").add(Net("e")))) \
         .add(Net("c"))
 
+    root3 = Net("a") \
+        .add(Net("c")) \
+        .add(Net("b").add(Net("d").add(Net("e"))))
+
     assert root1 == root2
+    assert root1 != root3
+    assert root2 != root3
 
     merge1_sub = Net("x")
     merge1 = Net("a") \
