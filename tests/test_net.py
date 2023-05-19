@@ -64,6 +64,13 @@ def test_modify():
     root = Net("a")
     left = Net("b")
 
+    root.replace("w")
+    assert root.data == "a"
+
+    root = root.replace("w")
+    assert root.data == "w"
+    root = root.replace("a")
+
     root.add(left)
     assert root == Net("a")
 

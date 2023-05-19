@@ -30,6 +30,13 @@ class Net:
 
         return self._data == other._data and self._children == other._children
 
+    def attach(self, data: Hashable) -> "Net":
+        """Attach data to this node."""
+        return Net(
+            data=data,
+            children=self._children,
+        )
+
     def add(self, child: "Net", data: Hashable = None) -> "Net":
         """Add or replace a link to another node."""
         return Net(
