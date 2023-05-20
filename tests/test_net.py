@@ -1,4 +1,3 @@
-import pytest
 from sowing.net import Net
 
 
