@@ -203,7 +203,7 @@ def parse_chain(data: str) -> tuple[Net, int]:
                 # Parse node label
                 match (token := next(tokens)).kind:
                     case TokenKind.String:
-                        active = active.attach(token.value)
+                        active = active.label(token.value)
 
                     case _:
                         tokens.push(token)

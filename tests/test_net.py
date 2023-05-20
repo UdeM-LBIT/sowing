@@ -1,4 +1,4 @@
-from sowing.net import Net
+from sowing.net import Net, Zipper
 
 
 def test_build():
@@ -63,12 +63,12 @@ def test_modify():
     root = Net("a")
     left = Net("b")
 
-    root.attach("w")
+    root.label("w")
     assert root.data == "a"
 
-    root = root.attach("w")
+    root = root.label("w")
     assert root.data == "w"
-    root = root.attach("a")
+    root = root.label("a")
 
     root.add(left)
     assert root == Net("a")
@@ -79,14 +79,30 @@ def test_modify():
     root = root.add(left, "data")
     assert root == Net("a").add(Net("b")).add(Net("b"), "data")
 
-    root.remove(left)
+    root.pop(0)
     assert root == Net("a").add(Net("b")).add(Net("b"), "data")
 
-    root = root.remove(left)
+    root = root.pop(0)
+    assert root == Net("a").add(Net("b"), "data")
+
+    root = root.pop()
     assert root == Net("a")
+
+    root = root.add(left, "before")
+    root = root.add(left, "after")
+    assert root == Net("a").add(Net("b"), "before").add(Net("b"), "after")
+
+    root = root.replace(0, data="replaced")
+    assert root == Net("a").add(Net("b"), "replaced").add(Net("b"), "after")
+
+    root = root.replace(1, child=Net("w"))
+    assert root == Net("a").add(Net("b"), "replaced").add(Net("w"), "after")
 
 
 def test_hashable():
+    assert hash(Net(42)) != hash(Net(1337))
+    assert hash(Net(1337)) == hash(Net(1337))
+
     seen = set()
     seen.add(Net("a").add(Net("b")).add(Net("c")))
 
@@ -98,3 +114,78 @@ def test_hashable():
 
     seen.add(Net("a").add(Net("b"), "edge b").add(Net("c"), "edge c"))
     assert len(seen) == 3
+
+
+def test_hash_collisions():
+    seen = set()
+    repeats = 10_000
+
+    for index in range(repeats):
+        seen.add(hash(Net(index)))
+
+    assert len(seen) == repeats
+
+
+def test_zipper_navigate():
+    left = Net("b").add(Net("d").add(Net("e"), "4"), "3")
+    right = Net("c")
+    root = Net("a").add(left, "1").add(right, "2")
+
+    zipper = root.unzip()
+
+    assert zipper.node == root
+    assert zipper.is_root()
+    assert zipper.thread == ()
+
+    zipper.down(0)
+    assert zipper == root.unzip()
+
+    zipper = zipper.down(0)
+    assert zipper.node == left
+    assert not zipper.is_root()
+    assert zipper.thread == (Zipper.Bead(
+        origin=Net("a").add(right, "2"),
+        data="1",
+        index=0,
+    ),)
+
+    zipper = zipper.up()
+    assert zipper.node == root
+    assert zipper.is_root()
+    assert zipper.thread == ()
+
+    assert zipper.down(0).sibling(0) == zipper.down(0)
+    assert zipper.down(1).sibling(-1) == zipper.down(0)
+    assert zipper.down(0).sibling(1) == zipper.down(1)
+    assert zipper.down(1).sibling(0) == zipper.down(1)
+    assert zipper.down().up() == zipper
+    assert zipper.down().down().up().up() == zipper
+    assert zipper.down(0).sibling(1).sibling(-1) == zipper.down(0)
+
+    assert root == root.unzip().zip()
+    assert root == root.unzip().down().down().zip()
+
+
+def test_zipper_edit():
+    left = Net("b").add(Net("d").add(Net("e"), "4"), "3")
+    right = Net("c")
+    root = Net("a").add(left, "1").add(right, "2")
+
+    zipper = root.unzip().down(1)
+    zipper = zipper.replace(zipper.node.label("w"))
+    assert zipper.node.data == "w"
+
+    root = zipper.zip()
+    assert root == Net("a").add(left, "1").add(Net("w"), "2")
+
+    zipper = root.unzip().down(0)
+    zipper = zipper.replace(zipper.node.replace(0, data="8"))
+    assert zipper.node.data == "b"
+    assert zipper.node.children[0][1] == "8"
+
+    root = zipper.zip()
+    assert root == (
+        Net("a")
+        .add(Net("b").add(Net("d").add(Net("e"), "4"), "8"), "1")
+        .add(Net("w"), "2")
+    )
