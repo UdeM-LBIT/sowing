@@ -189,3 +189,83 @@ def test_zipper_edit():
         .add(Net("b").add(Net("d").add(Net("e"), "4"), "8"), "1")
         .add(Net("w"), "2")
     )
+
+
+def test_traverse():
+    root = (
+        Net("a")
+        .add(Net("b").add(Net("c")))
+        .add(Net("d").add(Net("e").add(Net("f")).add(Net("g"))))
+    )
+    zipper = root.unzip()
+
+    assert zipper.node.data == "a"
+    assert (zipper := zipper.next_pre()).node.data == "b"
+    assert (zipper := zipper.next_pre()).node.data == "c"
+    assert (zipper := zipper.next_pre()).node.data == "d"
+    assert (zipper := zipper.next_pre()).node.data == "e"
+    assert (zipper := zipper.next_pre()).node.data == "f"
+    assert (zipper := zipper.next_pre()).node.data == "g"
+    assert (zipper := zipper.next_pre()).node == root
+
+    assert (zipper := zipper.next_post()).node.data == "c"
+    assert (zipper := zipper.next_post()).node.data == "b"
+    assert (zipper := zipper.next_post()).node.data == "f"
+    assert (zipper := zipper.next_post()).node.data == "g"
+    assert (zipper := zipper.next_post()).node.data == "e"
+    assert (zipper := zipper.next_post()).node.data == "d"
+    assert (zipper := zipper.next_post()).node == root
+
+
+def test_map():
+    root = (
+        Net("a")
+        .add(Net("b").add(Net("c")))
+        .add(Net("d").add(Net("e").add(Net("f")).add(Net("g"))))
+    )
+
+    prime = root.map_pre(lambda node: node.label(node.data + "'"))
+    assert prime == (
+        Net("a'")
+        .add(Net("b'").add(Net("c'")))
+        .add(Net("d'").add(Net("e'").add(Net("f'")).add(Net("g'"))))
+    )
+
+    def transform_no_unary(node: Net) -> Net:
+        if len(node.children) == 1:
+            return node.children[0][0]
+
+        return node
+
+    no_unary = root.map_pre(transform_no_unary)
+    assert no_unary == (
+        Net("a")
+        .add(Net("c"))
+        .add(Net("e").add(Net("f")).add(Net("g")))
+    )
+
+    expr = (
+        Net(int.__mul__)
+        .add(Net(int.__add__)
+             .add(Net(6))
+             .add(Net(2))
+        )
+        .add(Net(int.__floordiv__)
+             .add(Net(18))
+             .add(Net(int.__mul__)
+                  .add(Net(2))
+                  .add(Net(3))
+             )
+        )
+    )
+
+    def transform_apply(node: Net) -> Net:
+        if type(node.data) == int:
+            return node
+
+        left = node.children[0][0].data
+        right = node.children[1][0].data
+        return Net(node.data(left, right))
+
+    apply = expr.map_post(transform_apply)
+    assert apply == Net(24)
