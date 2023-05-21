@@ -1,10 +1,20 @@
-from typing import Callable, Hashable, Optional, Self
+from typing import Callable, Hashable, Self
 from dataclasses import dataclass, replace, field
-from enum import Enum
+from enum import Enum, auto
 
 
-class Empty(Enum):
-    Marker = 0
+class _Empty(Enum):
+    Marker = auto()
+
+
+class Order(Enum):
+    """Network traversal order."""
+
+    # Visit nodes before their children, in depth-first order
+    Pre = auto()
+
+    # Visit nodes after their children, in depth-first order
+    Post = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,8 +77,8 @@ class Net:
     def replace(
         self,
         index: int,
-        child: Self|Empty = Empty.Marker,
-        data: Hashable|Empty = Empty.Marker,
+        child: Self|_Empty = _Empty.Marker,
+        data: Hashable|_Empty = _Empty.Marker,
     ) -> Self:
         """
         Replace one of the children of this node.
@@ -78,10 +88,10 @@ class Net:
         :param data: new link data (default: leave unchanged)
         :returns: updated node
         """
-        if child == Empty.Marker:
+        if child == _Empty.Marker:
             child = self.children[index][0]
 
-        if data == Empty.Marker:
+        if data == _Empty.Marker:
             data = self.children[index][1]
 
         return replace(
@@ -94,38 +104,33 @@ class Net:
         """Make a zipper for traversing and manipulating this network."""
         return Zipper(self)
 
-    def map_pre(self, func: Callable[[Self], Self]) -> Self:
+    def map(
+        self,
+        func: Callable[[Self], Self],
+        order: Order = Order.Post,
+    ) -> Self:
         """
-        Transform the nodes of this network in preorder.
+        Transform the nodes of this network along a given traversal order.
 
         :param func: transformation function
+        :param order: traversal order (default: depth-first postorder)
         :returns: updated network
         """
-        zipper = self.unzip()
+        if order == Order.Pre:
+            zipper = self.unzip()
+            end = lambda: zipper.is_root()
+        elif order == Order.Post:
+            zipper = self.unzip().next(order)
+            end = lambda: zipper.prev(order).is_root()
+        else:
+            raise NotImplementedError()
 
         while True:
             zipper = zipper.replace(func(zipper.node))
-            zipper = zipper.next_pre()
+            zipper = zipper.next(order)
 
-            if zipper.is_root():
+            if end():
                 return zipper.zip()
-
-    def map_post(self, func: Callable[[Self], Self]) -> Self:
-        """
-        Transform the nodes of this network in postorder.
-
-        :param func: transformation function
-        :returns: updated network
-        """
-        zipper = self.unzip().next_post()
-
-        while True:
-            zipper = zipper.replace(func(zipper.node))
-
-            if zipper.is_root():
-                return zipper.zip()
-
-            zipper = zipper.next_post()
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,13 +164,18 @@ class Zipper:
         """
         Move to a child of the pointed node.
 
-        :param index: index of the child to move to (default: first child)
+        :param index: index of the child to move to;
+            negative indices are supported (default: first child)
         :returns: updated zipper
         """
-        if index >= len(self.node.children):
+        children = self.node.children
+
+        if index >= len(children):
             raise IndexError("child index out of range")
 
-        child, data = self.node.children[index]
+        index %= len(children)
+        child, data = children[index]
+
         return Zipper(
             node=child,
             thread=self.thread + (self.Bead(
@@ -190,53 +200,95 @@ class Zipper:
             thread=self.thread[:-1],
         )
 
-    def has_sibling(self) -> bool:
-        """Test whether the pointed node has a next sibling."""
-        return (
-            not self.is_root()
-            and self.thread[-1].index < len(self.thread[-1].origin.children)
-        )
+    def has_sibling(self, index: int = 1) -> bool:
+        """
+        Test whether a sibling exists for the pointed node.
+
+        :param index: sibling offset relative to the current node;
+            positive for right, negative for left
+            (default: test for the next sibling to the right)
+        """
+        if self.is_root():
+            return False
+
+        if index == 0:
+            return True
+
+        bead = self.thread[-1]
+        return 0 <= bead.index + index < len(bead.origin.children) + 1
 
     def sibling(self, index: int = 1) -> Self:
         """
         Move to a sibling of the pointed node.
 
-        :param index: sibling offset relative to the current node
-            (default: go to the sibling on the right)
+        :param index: sibling offset relative to the current node;
+            positive for right, negative for left
+            (default: next sibling to the right)
         :returns: updated zipper
         """
+        if not self.has_sibling(index):
+            raise IndexError("sibling index out of range")
+
         return self.up().down(self.thread[-1].index + index)
 
-    def next_pre(self) -> Optional[Self]:
-        """Move to the next node in preorder."""
+    def _pre(self, forward: bool) -> Self:
+        child = 0 if forward else -1
+        sibling = 1 if forward else -1
+
         if not self.is_leaf():
-            return self.down()
+            return self.down(child)
 
-        while not self.has_sibling():
-            self = self.up()
-
+        while not self.has_sibling(sibling):
             if self.is_root():
                 return self
 
-        return self.sibling()
+            self = self.up()
 
-    def next_post(self) -> Optional[Self]:
-        """Move to the next node in postorder."""
+        return self.sibling(sibling)
+
+    def _post(self, forward: bool) -> Self:
+        child = 0 if forward else -1
+        sibling = 1 if forward else -1
+
         if self.is_root():
             while not self.is_leaf():
-                self = self.down()
+                self = self.down(child)
 
             return self
 
-        if not self.has_sibling():
+        if not self.has_sibling(sibling):
             return self.up()
 
-        self = self.sibling()
+        self = self.sibling(sibling)
 
         while not self.is_leaf():
-            self = self.down()
+            self = self.down(child)
 
         return self
+
+    def next(self, order: Order = Order.Post) -> Self:
+        """
+        Move to the next node along a given traversal order.
+
+        :param order: traversal order (default: depth-first postorder)
+        :returns: updated zipper
+        """
+        match order:
+            case Order.Pre: return self._pre(forward=True)
+            case Order.Post: return self._post(forward=True)
+            case _: raise NotImplementedError
+
+    def prev(self, order: Order = Order.Post) -> Self:
+        """
+        Move to the previous node along a given traversal order.
+
+        :param order: traversal order (default: depth-first postorder)
+        :returns: updated zipper
+        """
+        match order:
+            case Order.Pre: return self._post(forward=False)
+            case Order.Post: return self._pre(forward=False)
+            case _: raise NotImplementedError()
 
     def zip(self) -> Net:
         """Zip the network up to its root and return it."""

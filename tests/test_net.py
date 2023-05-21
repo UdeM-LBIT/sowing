@@ -1,4 +1,4 @@
-from sowing.net import Net, Zipper
+from sowing.net import Net, Zipper, Order
 
 
 def test_build():
@@ -191,60 +191,131 @@ def test_zipper_edit():
     )
 
 
-def test_traverse():
-    root = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(Net("e").add(Net("f")).add(Net("g"))))
-    )
+def test_zipper_next_prev():
+    root = Net("a")
     zipper = root.unzip()
 
-    assert zipper.node.data == "a"
-    assert (zipper := zipper.next_pre()).node.data == "b"
-    assert (zipper := zipper.next_pre()).node.data == "c"
-    assert (zipper := zipper.next_pre()).node.data == "d"
-    assert (zipper := zipper.next_pre()).node.data == "e"
-    assert (zipper := zipper.next_pre()).node.data == "f"
-    assert (zipper := zipper.next_pre()).node.data == "g"
-    assert (zipper := zipper.next_pre()).node == root
+    assert zipper.next(Order.Pre) == zipper
+    assert zipper.prev(Order.Pre) == zipper
+    assert zipper.next(Order.Post) == zipper
+    assert zipper.prev(Order.Post) == zipper
 
-    assert (zipper := zipper.next_post()).node.data == "c"
-    assert (zipper := zipper.next_post()).node.data == "b"
-    assert (zipper := zipper.next_post()).node.data == "f"
-    assert (zipper := zipper.next_post()).node.data == "g"
-    assert (zipper := zipper.next_post()).node.data == "e"
-    assert (zipper := zipper.next_post()).node.data == "d"
-    assert (zipper := zipper.next_post()).node == root
-
-
-def test_map():
     root = (
         Net("a")
         .add(Net("b").add(Net("c")))
-        .add(Net("d").add(Net("e").add(Net("f")).add(Net("g"))))
+        .add(Net("d").add(
+            Net("e")
+            .add(Net("f"))
+            .add(Net("g"))
+            .add(Net("h").add(Net("i")))
+        ))
+    )
+    zipper = root.unzip()
+    assert zipper.node == root
+
+    assert (zipper := zipper.next(Order.Pre)).node.data == "b"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "c"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "d"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "e"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "f"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "g"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "h"
+    assert (zipper := zipper.next(Order.Pre)).node.data == "i"
+    assert (zipper := zipper.next(Order.Pre)).node == root
+
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "i"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "h"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "g"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "f"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "e"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "d"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "c"
+    assert (zipper := zipper.prev(Order.Pre)).node.data == "b"
+    assert (zipper := zipper.prev(Order.Pre)).node == root
+
+    assert (zipper := zipper.next(Order.Post)).node.data == "c"
+    assert (zipper := zipper.next(Order.Post)).node.data == "b"
+    assert (zipper := zipper.next(Order.Post)).node.data == "f"
+    assert (zipper := zipper.next(Order.Post)).node.data == "g"
+    assert (zipper := zipper.next(Order.Post)).node.data == "i"
+    assert (zipper := zipper.next(Order.Post)).node.data == "h"
+    assert (zipper := zipper.next(Order.Post)).node.data == "e"
+    assert (zipper := zipper.next(Order.Post)).node.data == "d"
+    assert (zipper := zipper.next(Order.Post)).node == root
+
+    assert (zipper := zipper.prev(Order.Post)).node.data == "d"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "e"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "h"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "i"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "g"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "f"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "b"
+    assert (zipper := zipper.prev(Order.Post)).node.data == "c"
+    assert (zipper := zipper.prev(Order.Post)).node == root
+
+
+def test_map_relabel():
+    before = (
+        Net("a")
+        .add(Net("b").add(Net("c")))
+        .add(Net("d").add(
+            Net("e")
+            .add(Net("f"))
+            .add(Net("g"))
+            .add(Net("h").add(Net("i")))
+        ))
+    )
+    after = (
+        Net("A")
+        .add(Net("B").add(Net("C")))
+        .add(Net("D").add(
+            Net("E")
+            .add(Net("F"))
+            .add(Net("G"))
+            .add(Net("H").add(Net("I")))
+        ))
     )
 
-    prime = root.map_pre(lambda node: node.label(node.data + "'"))
-    assert prime == (
-        Net("a'")
-        .add(Net("b'").add(Net("c'")))
-        .add(Net("d'").add(Net("e'").add(Net("f'")).add(Net("g'"))))
+    # Rename all nodes to uppercase (order does not matter)
+    def transform(node: Net) -> Net:
+        return node.label(node.data.upper())
+
+    assert before.map(transform) == after
+    assert before.map(transform, Order.Pre) == after
+    assert before.map(transform, Order.Post) == after
+
+
+def test_map_replace():
+    before = (
+        Net("a")
+        .add(Net("b").add(Net("c")))
+        .add(Net("d").add(
+            Net("e")
+            .add(Net("f"))
+            .add(Net("g"))
+            .add(Net("h").add(Net("i")))
+        ))
+    )
+    after = (
+        Net("a")
+        .add(Net("c"))
+        .add(Net("e").add(Net("f")).add(Net("g")).add(Net("i")))
     )
 
-    def transform_no_unary(node: Net) -> Net:
+    # Remove all unary nodes (order does not matter)
+    def transform(node: Net) -> Net:
         if len(node.children) == 1:
             return node.children[0][0]
 
         return node
 
-    no_unary = root.map_pre(transform_no_unary)
-    assert no_unary == (
-        Net("a")
-        .add(Net("c"))
-        .add(Net("e").add(Net("f")).add(Net("g")))
-    )
+    assert before.map(transform) == after
+    assert before.map(transform, Order.Pre) == after
+    assert before.map(transform, Order.Post) == after
 
-    expr = (
+
+def test_map_fold():
+    before = (
         Net(int.__mul__)
         .add(Net(int.__add__)
              .add(Net(6))
@@ -258,14 +329,32 @@ def test_map():
              )
         )
     )
+    after = Net(24)
 
-    def transform_apply(node: Net) -> Net:
+    # Fold arithmetical expressions to their result (postorder only)
+    def transform(node: Net) -> Net:
         if type(node.data) == int:
             return node
 
-        left = node.children[0][0].data
-        right = node.children[1][0].data
-        return Net(node.data(left, right))
+        args = map(lambda child: child[0].data, node.children)
+        return Net(node.data(*args))
 
-    apply = expr.map_post(transform_apply)
-    assert apply == Net(24)
+    assert before.map(transform) == after
+    assert before.map(transform, Order.Post) == after
+
+
+def test_map_expand():
+    before = Net(3)
+    after_pre = Net(3).add(Net(2).add(Net(1).add(Net(0))))
+    after_post = Net(3).add(Net(2))
+
+    # Expand nodes according to their value
+    def transform(node: Net) -> Net:
+        if node.data > 0:
+            return node.add(Net(node.data - 1))
+
+        return node
+
+    assert before.map(transform) == after_post
+    assert before.map(transform, Order.Pre) == after_pre
+    assert before.map(transform, Order.Post) == after_post
