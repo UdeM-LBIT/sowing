@@ -254,6 +254,27 @@ def test_zipper_next_prev():
     assert (zipper := zipper.prev(Order.Post)).node == root
 
 
+def test_traverse():
+    root = (
+        Net("a")
+        .add(Net("b").add(Net("c")))
+        .add(Net("d").add(
+            Net("e")
+            .add(Net("f"))
+            .add(Net("g"))
+            .add(Net("h").add(Net("i")))
+        ))
+    )
+
+    def to_list(iterable):
+        return [node.data for node in iterable]
+
+    assert to_list(root) == list("cbfgiheda")
+    assert to_list(reversed(root)) == list("adehigfbc")
+    assert to_list(root.traverse(Order.Pre)) == list("abcdefghi")
+    assert to_list(root.traverse(Order.Pre, reverse=True)) == list("ihgfedcba")
+
+
 def test_map_relabel():
     before = (
         Net("a")
@@ -266,19 +287,19 @@ def test_map_relabel():
         ))
     )
     after = (
-        Net("A")
-        .add(Net("B").add(Net("C")))
-        .add(Net("D").add(
-            Net("E")
-            .add(Net("F"))
-            .add(Net("G"))
-            .add(Net("H").add(Net("I")))
+        Net("aa")
+        .add(Net("bb").add(Net("cc")))
+        .add(Net("dd").add(
+            Net("ee")
+            .add(Net("ff"))
+            .add(Net("gg"))
+            .add(Net("hh").add(Net("ii")))
         ))
     )
 
-    # Rename all nodes to uppercase (order does not matter)
+    # Double all node names (order does not matter)
     def transform(node: Net) -> Net:
-        return node.label(node.data.upper())
+        return node.label(node.data * 2)
 
     assert before.map(transform) == after
     assert before.map(transform, Order.Pre) == after

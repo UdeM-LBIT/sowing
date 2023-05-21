@@ -104,33 +104,45 @@ class Net:
         """Make a zipper for traversing and manipulating this network."""
         return Zipper(self)
 
+    def traverse(self, order: Order, reverse: bool = False) -> "Iterator":
+        """
+        Make an interator to traverse the network.
+
+        :param order: traversal order
+        :param reverse: pass true to reverse the order
+        :returns: iterator
+        """
+        return Iterator(self, order, reverse)
+
+    def __iter__(self) -> "Iterator":
+        """Traverse the network in depth-first postorder."""
+        return self.traverse(Order.Post)
+
+    def __reversed__(self) -> "Iterator":
+        """Traverse the network in reverse depth-first postorder."""
+        return self.traverse(Order.Post, reverse=True)
+
     def map(
         self,
         func: Callable[[Self], Self],
         order: Order = Order.Post,
+        reverse: bool = False,
     ) -> Self:
         """
         Transform the nodes of this network along a given traversal order.
 
         :param func: transformation function
         :param order: traversal order (default: depth-first postorder)
+        :param reverse: pass true to reverse the traversal order
         :returns: updated network
         """
-        if order == Order.Pre:
-            zipper = self.unzip()
-            end = lambda: zipper.is_root()
-        elif order == Order.Post:
-            zipper = self.unzip().next(order)
-            end = lambda: zipper.prev(order).is_root()
-        else:
-            raise NotImplementedError()
+        it = Iterator(self, order, reverse)
 
-        while True:
-            zipper = zipper.replace(func(zipper.node))
-            zipper = zipper.next(order)
+        while not it.ended:
+            it.zipper = it.zipper.replace(func(it.zipper.node))
+            next(it)
 
-            if end():
-                return zipper.zip()
+        return it.zipper.zip()
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,9 +243,9 @@ class Zipper:
 
         return self.up().down(self.thread[-1].index + index)
 
-    def _pre(self, forward: bool) -> Self:
-        child = 0 if forward else -1
-        sibling = 1 if forward else -1
+    def _pre(self, reverse: bool) -> Self:
+        child = -1 if reverse else 0
+        sibling = -1 if reverse else 1
 
         if not self.is_leaf():
             return self.down(child)
@@ -246,9 +258,9 @@ class Zipper:
 
         return self.sibling(sibling)
 
-    def _post(self, forward: bool) -> Self:
-        child = 0 if forward else -1
-        sibling = 1 if forward else -1
+    def _post(self, reverse: bool) -> Self:
+        child = -1 if reverse else 0
+        sibling = -1 if reverse else 1
 
         if self.is_root():
             while not self.is_leaf():
@@ -274,8 +286,8 @@ class Zipper:
         :returns: updated zipper
         """
         match order:
-            case Order.Pre: return self._pre(forward=True)
-            case Order.Post: return self._post(forward=True)
+            case Order.Pre: return self._pre(reverse=False)
+            case Order.Post: return self._post(reverse=False)
             case _: raise NotImplementedError
 
     def prev(self, order: Order = Order.Post) -> Self:
@@ -286,8 +298,8 @@ class Zipper:
         :returns: updated zipper
         """
         match order:
-            case Order.Pre: return self._post(forward=False)
-            case Order.Post: return self._pre(forward=False)
+            case Order.Pre: return self._post(reverse=True)
+            case Order.Post: return self._pre(reverse=True)
             case _: raise NotImplementedError()
 
     def zip(self) -> Net:
@@ -298,3 +310,41 @@ class Zipper:
             bubble = bubble.up()
 
         return bubble.node
+
+
+class Iterator:
+    def __init__(self, root: Net, order: Order, reverse: bool):
+        self.zipper = root.unzip()
+
+        if reverse:
+            self.step = lambda: self.zipper.prev(order)
+        else:
+            self.step = lambda: self.zipper.next(order)
+
+        if (order == Order.Pre) == reverse:
+            self.zipper = self.step()
+            self.stop_before_root = False
+        else:
+            self.stop_before_root = True
+
+        self.ended = False
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> Net:
+        node = self.zipper.node
+
+        if self.ended:
+            raise StopIteration
+
+        after = self.step()
+
+        if self.stop_before_root and after.is_root():
+            self.ended = True
+
+        if not self.stop_before_root and self.zipper.is_root():
+            self.ended = True
+
+        self.zipper = after
+        return node
