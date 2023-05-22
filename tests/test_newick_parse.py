@@ -4,13 +4,13 @@ import pytest
 
 
 def test_topology():
-    assert newick.parse(";") == Net()
-    assert newick.parse("(,);") == Net().add(Net()).add(Net())
+    assert newick.parse(";") == Net("")
+    assert newick.parse("(,);") == Net("").add(Net("")).add(Net(""))
     assert newick.parse("((),(,,),);") == (
-        Net()
-        .add(Net().add(Net()))
-        .add(Net().add(Net()).add(Net()).add(Net()))
-        .add(Net())
+        Net("")
+        .add(Net("").add(Net("")))
+        .add(Net("").add(Net("")).add(Net("")).add(Net("")))
+        .add(Net(""))
     )
 
 
@@ -26,7 +26,7 @@ def test_name():
 
 
 def test_length():
-    assert newick.parse(":42;") == Net()
+    assert newick.parse(":42;") == Net("")
     assert newick.parse("(left:42,right:24)root;") == (
         Net("root")
         .add(Net("left"), 42).add(Net("right"), 24)
@@ -104,15 +104,15 @@ def test_grammar_error():
 
 
 def test_phylip():
-    # Newick tree examples, taken from
+    # Newick example trees, taken from Phylip
     # <https://evolution.genetics.washington.edu/phylip/newicktree.html>
 
     assert newick.parse(
         "(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);"
     ) == (
-        Net()
+        Net("")
         .add(Net("B"), 6)
-        .add(Net().add(Net("A"), 5).add(Net("C"), 3).add(Net("E"), 4), 5)
+        .add(Net("").add(Net("A"), 5).add(Net("C"), 3).add(Net("E"), 4), 5)
         .add(Net("D"), 11)
     )
 
@@ -129,20 +129,20 @@ def test_phylip():
             dog:25.46154
         );"""
     ) == (
-        Net()
-        .add(Net()
+        Net("")
+        .add(Net("")
             .add(Net("raccoon"), 19.19959)
             .add(Net("bear"), 6.80041),
             0.84600
         )
-        .add(Net()
-             .add(Net()
+        .add(Net("")
+             .add(Net("")
                   .add(Net("sea lion"), 11.99700)
                   .add(Net("seal"), 12.00300),
                   7.52973
              )
-             .add(Net()
-                  .add(Net()
+             .add(Net("")
+                  .add(Net("")
                        .add(Net("monkey"), 100.85930)
                        .add(Net("cat"), 47.14069),
                        20.59201

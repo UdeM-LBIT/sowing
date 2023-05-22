@@ -185,7 +185,7 @@ def parse_chain(data: str) -> tuple[Net, int]:
         match state:
             case ParseState.NodeStart:
                 # Start parsing a new node
-                nodes.append(Net())
+                nodes.append(Net(""))
 
                 match (token := next(tokens)).kind:
                     case TokenKind.Open:
