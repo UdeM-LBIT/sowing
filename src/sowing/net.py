@@ -1,4 +1,4 @@
-from typing import Callable, Hashable, Self
+from typing import Callable, Generator, Hashable, Iterator, Self
 from dataclasses import dataclass, replace, field
 from enum import Enum, auto
 
@@ -15,6 +15,9 @@ class Order(Enum):
 
     # Visit nodes after their children, in depth-first order
     Post = auto()
+
+    # Visit nodes along an eulerian tour
+    Euler = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,46 +106,6 @@ class Net:
     def unzip(self) -> "Zipper":
         """Make a zipper for traversing and manipulating this network."""
         return Zipper(self)
-
-    def traverse(self, order: Order, reverse: bool = False) -> "Iterator":
-        """
-        Make an interator to traverse the network.
-
-        :param order: traversal order
-        :param reverse: pass true to reverse the order
-        :returns: iterator
-        """
-        return Iterator(self, order, reverse)
-
-    def __iter__(self) -> "Iterator":
-        """Traverse the network in depth-first postorder."""
-        return self.traverse(Order.Post)
-
-    def __reversed__(self) -> "Iterator":
-        """Traverse the network in reverse depth-first postorder."""
-        return self.traverse(Order.Post, reverse=True)
-
-    def map(
-        self,
-        func: Callable[[Self], Self],
-        order: Order = Order.Post,
-        reverse: bool = False,
-    ) -> Self:
-        """
-        Transform the nodes of this network along a given traversal order.
-
-        :param func: transformation function
-        :param order: traversal order (default: depth-first postorder)
-        :param reverse: pass true to reverse the traversal order
-        :returns: updated network
-        """
-        it = Iterator(self, order, reverse)
-
-        while not it.ended:
-            it.zipper = it.zipper.replace(func(it.zipper.node))
-            next(it)
-
-        return it.zipper.zip()
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,9 +206,9 @@ class Zipper:
 
         return self.up().down(self.thread[-1].index + index)
 
-    def _pre(self, reverse: bool) -> Self:
-        child = -1 if reverse else 0
-        sibling = -1 if reverse else 1
+    def _preorder(self, flip: bool) -> Self:
+        child = -1 if flip else 0
+        sibling = -1 if flip else 1
 
         if not self.is_leaf():
             return self.down(child)
@@ -258,9 +221,9 @@ class Zipper:
 
         return self.sibling(sibling)
 
-    def _post(self, reverse: bool) -> Self:
-        child = -1 if reverse else 0
-        sibling = -1 if reverse else 1
+    def _postorder(self, flip: bool) -> Self:
+        child = -1 if flip else 0
+        sibling = -1 if flip else 1
 
         if self.is_root():
             while not self.is_leaf():
@@ -278,29 +241,25 @@ class Zipper:
 
         return self
 
-    def next(self, order: Order = Order.Post) -> Self:
+    def next(self, preorder: bool = False) -> Self:
         """
-        Move to the next node along a given traversal order.
+        Move to the next node in preorder or postorder.
 
-        :param order: traversal order (default: depth-first postorder)
+        :param preorder: pass True to move in preorder (default is postorder)
         :returns: updated zipper
         """
-        match order:
-            case Order.Pre: return self._pre(reverse=False)
-            case Order.Post: return self._post(reverse=False)
-            case _: raise NotImplementedError
+        if preorder: return self._preorder(flip=False)
+        else: return self._postorder(flip=False)
 
-    def prev(self, order: Order = Order.Post) -> Self:
+    def prev(self, preorder: bool = False) -> Self:
         """
-        Move to the previous node along a given traversal order.
+        Move to the previous node in preorder or postorder.
 
-        :param order: traversal order (default: depth-first postorder)
+        :param preorder: pass True to move in preorder (default is postorder)
         :returns: updated zipper
         """
-        match order:
-            case Order.Pre: return self._post(reverse=True)
-            case Order.Post: return self._pre(reverse=True)
-            case _: raise NotImplementedError()
+        if preorder: return self._postorder(flip=True)
+        else: return self._preorder(flip=True)
 
     def zip(self) -> Net:
         """Zip the network up to its root and return it."""
@@ -312,39 +271,92 @@ class Zipper:
         return bubble.node
 
 
-class Iterator:
-    def __init__(self, root: Net, order: Order, reverse: bool):
-        self.zipper = root.unzip()
+def _none_else(left, right):
+    return left if left is not None else right
 
-        if reverse:
-            self.step = lambda: self.zipper.prev(order)
+
+Traversal = Generator[Zipper, Zipper, Net]
+
+
+def _traverse_pre_post(node: Net, preorder: bool, reverse: bool) -> Traversal:
+    cursor = node.unzip()
+
+    if reverse: advance = lambda: cursor.prev(preorder=preorder)
+    else: advance = lambda: cursor.next(preorder=preorder)
+
+    root_start = (not preorder == reverse)
+
+    if not root_start:
+        cursor = advance()
+
+    while True:
+        next_cursor = yield cursor
+        cursor = _none_else(next_cursor, cursor)
+
+        if not root_start and cursor.is_root():
+            return cursor.zip()
+
+        cursor = advance()
+
+        if root_start and cursor.is_root():
+            return cursor.zip()
+
+
+def _traverse_euler(node: Net, reverse: bool) -> Traversal:
+    child = -1 if reverse else 0
+    sibling = -1 if reverse else 1
+    cursor = node.unzip()
+
+    while True:
+        next_cursor = yield cursor
+        cursor = _none_else(next_cursor, cursor)
+
+        if not cursor.is_leaf():
+            cursor = cursor.down(child)
         else:
-            self.step = lambda: self.zipper.next(order)
+            while not cursor.has_sibling(sibling) and not cursor.is_root():
+                cursor = cursor.up()
+                next_cursor = yield cursor
+                cursor = _none_else(next_cursor, cursor)
 
-        if (order == Order.Pre) == reverse:
-            self.zipper = self.step()
-            self.stop_before_root = False
-        else:
-            self.stop_before_root = True
+            if cursor.is_root():
+                return cursor.zip()
+            else:
+                pos = cursor.thread[-1].index
+                cursor = cursor.up()
+                next_cursor = yield cursor
+                cursor = _none_else(next_cursor, cursor)
+                cursor = cursor.down(pos + sibling)
 
-        self.ended = False
 
-    def __iter__(self) -> Self:
-        return self
+def traverse(
+    node: Net,
+    order: Order = Order.Post,
+    reverse: bool = False,
+) -> Traversal:
+    match order:
+        case Order.Post:
+            return _traverse_pre_post(node, preorder=False, reverse=reverse)
 
-    def __next__(self) -> Net:
-        node = self.zipper.node
+        case Order.Pre:
+            return _traverse_pre_post(node, preorder=True, reverse=reverse)
 
-        if self.ended:
-            raise StopIteration
+        case Order.Euler:
+            return _traverse_euler(node, reverse=reverse)
 
-        after = self.step()
+        case _:
+            raise ValueError(order)
 
-        if self.stop_before_root and after.is_root():
-            self.ended = True
 
-        if not self.stop_before_root and self.zipper.is_root():
-            self.ended = True
+def transform(
+    func: Callable[[Net, tuple[Zipper.Bead]], tuple[Net, tuple[Zipper.Bead]]],
+    traversal: Traversal,
+) -> Net:
+    cursor = next(traversal)
 
-        self.zipper = after
-        return node
+    try:
+        while True:
+            cursor = Zipper(*func(cursor.node, cursor.thread))
+            cursor = traversal.send(cursor)
+    except StopIteration as end:
+        return end.value
