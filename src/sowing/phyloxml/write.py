@@ -1,4 +1,5 @@
-from ..net import Net, Order
+from ..net import Net
+from ..traversal import Order, traverse, transform
 from xml.etree import ElementTree as ET
 
 
@@ -17,21 +18,21 @@ def map_edge(edge):
     return element
 
 
-def map_node(node: Net):
+def map_node(node: Net, _):
     element = ET.Element(phylo("clade"))
 
     name_element = ET.SubElement(element, phylo("name"))
     name_element.text = node.data
 
     element.extend(map(map_edge, node.children))
-    return Net(element)
+    return Net(element), _
 
 
 def write(net: Net):
     root = ET.Element(phylo("phyloxml"))
     phylogeny = ET.SubElement(root, phylo("phylogeny"))
 
-    clades = net.map(map_node, Order.Post).data
+    clades = transform(map_node, traverse(net, Order.Post)).data
     phylogeny.append(clades)
 
     return ET.tostring(
