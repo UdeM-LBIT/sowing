@@ -1,10 +1,10 @@
 from typing import Callable, Generator
 from enum import Enum, auto
-from .net import Net, Zipper
+from .node import Node, Zipper
 
 
 class Order(Enum):
-    """Network traversal orders."""
+    """Tree traversal orders."""
 
     # Visit nodes before their children, in depth-first order
     Pre = auto()
@@ -20,10 +20,10 @@ def _none_else(left, right):
     return left if left is not None else right
 
 
-Traversal = Generator[Zipper, Zipper, Net]
+Traversal = Generator[Zipper, Zipper, Node]
 
 
-def _traverse_pre_post(node: Net, preorder: bool, reverse: bool) -> Traversal:
+def _traverse_pre_post(node: Node, preorder: bool, reverse: bool) -> Traversal:
     cursor = node.unzip()
 
     if reverse: advance = lambda: cursor.prev(preorder=preorder)
@@ -47,7 +47,7 @@ def _traverse_pre_post(node: Net, preorder: bool, reverse: bool) -> Traversal:
             return cursor.zip()
 
 
-def _traverse_euler(node: Net, reverse: bool) -> Traversal:
+def _traverse_euler(node: Node, reverse: bool) -> Traversal:
     child = -1 if reverse else 0
     sibling = -1 if reverse else 1
     cursor = node.unzip()
@@ -75,43 +75,43 @@ def _traverse_euler(node: Net, reverse: bool) -> Traversal:
 
 
 def traverse(
-    node: Net,
+    root: Node,
     order: Order = Order.Post,
     reverse: bool = False,
 ) -> Traversal:
     """
-    Make a generator that traverses a network in a given order.
+    Make a generator that traverses a tree in a given order.
 
-    :param node: root node to start from
+    :param root: root node to start from
     :param order: traversal order
     :param reverse: pass True to reverse the order
     :returns: generator that yields nodes in the specified order
     """
     match order:
         case Order.Post:
-            return _traverse_pre_post(node, preorder=False, reverse=reverse)
+            return _traverse_pre_post(root, preorder=False, reverse=reverse)
 
         case Order.Pre:
-            return _traverse_pre_post(node, preorder=True, reverse=reverse)
+            return _traverse_pre_post(root, preorder=True, reverse=reverse)
 
         case Order.Euler:
-            return _traverse_euler(node, reverse=reverse)
+            return _traverse_euler(root, reverse=reverse)
 
         case _:
             raise ValueError(order)
 
 
 def transform(
-    func: Callable[[Net, tuple[Zipper.Bead]], tuple[Net, tuple[Zipper.Bead]]],
+    func: Callable[[Node, tuple[Zipper.Bead]], tuple[Node, tuple[Zipper.Bead]]],
     traversal: Traversal,
-) -> Net:
+) -> Node:
     """
-    Transform a network along a given traversal.
+    Transform a tree along a given traversal.
 
     :param func: transformer callback that visits each node and its
         thread and returns the updated pair
-    :param traversal: network traversal generator
-    :returns: transformed network
+    :param traversal: tree traversal generator
+    :returns: transformed tree
     """
     cursor = next(traversal)
 

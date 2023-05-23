@@ -8,13 +8,13 @@ class _Empty(Enum):
 
 
 @dataclass(frozen=True, slots=True)
-class Net:
+class Node:
     data: Hashable = None
     children: tuple[tuple[Self, Hashable]] = ()
     _hash: int = field(init=False, repr=False, compare=False, default=0)
 
     def __post_init__(self):
-        # Cache hash to avoid needlessly traversing the whole network
+        # Cache hash to avoid needlessly traversing the whole tree
         object.__setattr__(self, "_hash", hash((self.data, self.children)))
 
     def __hash__(self):
@@ -91,7 +91,7 @@ class Net:
         )
 
     def unzip(self) -> "Zipper":
-        """Make a zipper for traversing and manipulating this network."""
+        """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
 
 
@@ -99,14 +99,14 @@ class Net:
 class Zipper:
     @dataclass(frozen=True, slots=True)
     class Bead:
-        origin: Net
+        origin: Node
         data: Hashable
         index: int
 
-    node: Net
+    node: Node
     thread: tuple[Bead] = ()
 
-    def replace(self, node: Net) -> Self:
+    def replace(self, node: Node) -> Self:
         """
         Replace the pointed node.
 
@@ -248,8 +248,8 @@ class Zipper:
         if preorder: return self._postorder(flip=True)
         else: return self._preorder(flip=True)
 
-    def zip(self) -> Net:
-        """Zip the network up to its root and return it."""
+    def zip(self) -> Node:
+        """Zip up to the root and return it."""
         bubble = self
 
         while not bubble.is_root():

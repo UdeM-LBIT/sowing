@@ -1,46 +1,46 @@
-from sowing.net import Net
+from sowing.node import Node
 from sowphy import newick
 import pytest
 
 
 def test_topology():
-    assert newick.parse(";") == Net("")
-    assert newick.parse("(,);") == Net("").add(Net("")).add(Net(""))
+    assert newick.parse(";") == Node("")
+    assert newick.parse("(,);") == Node("").add(Node("")).add(Node(""))
     assert newick.parse("((),(,,),);") == (
-        Net("")
-        .add(Net("").add(Net("")))
-        .add(Net("").add(Net("")).add(Net("")).add(Net("")))
-        .add(Net(""))
+        Node("")
+        .add(Node("").add(Node("")))
+        .add(Node("").add(Node("")).add(Node("")).add(Node("")))
+        .add(Node(""))
     )
 
 
 def test_name():
-    assert newick.parse("label;") == Net("label")
-    assert newick.parse("a_b_c;") == Net("a b c")
-    assert newick.parse("'a b c';") == Net("a b c")
-    assert newick.parse("'quote''quote';") == Net("quote'quote")
+    assert newick.parse("label;") == Node("label")
+    assert newick.parse("a_b_c;") == Node("a b c")
+    assert newick.parse("'a b c';") == Node("a b c")
+    assert newick.parse("'quote''quote';") == Node("quote'quote")
     assert newick.parse("(left,right)root;") == (
-        Net("root")
-        .add(Net("left")).add(Net("right"))
+        Node("root")
+        .add(Node("left")).add(Node("right"))
     )
 
 
 def test_length():
-    assert newick.parse(":42;") == Net("")
+    assert newick.parse(":42;") == Node("")
     assert newick.parse("(left:42,right:24)root;") == (
-        Net("root")
-        .add(Net("left"), 42).add(Net("right"), 24)
+        Node("root")
+        .add(Node("left"), 42).add(Node("right"), 24)
     )
     assert newick.parse("(left:1.23,right:3.21)root;") == (
-        Net("root")
-        .add(Net("left"), 1.23).add(Net("right"), 3.21)
+        Node("root")
+        .add(Node("left"), 1.23).add(Node("right"), 3.21)
     )
 
 
 def test_comments():
     assert newick.parse("(left[comment1],right[comment2])root[comment3];") == \
-        Net("root").add(Net("left")).add(Net("right"))
-    assert newick.parse("root[abc[nested[third]]];") == Net("root")
+        Node("root").add(Node("left")).add(Node("right"))
+    assert newick.parse("root[abc[nested[third]]];") == Node("root")
 
 
 def test_tokenize_error():
@@ -110,10 +110,10 @@ def test_phylip():
     assert newick.parse(
         "(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);"
     ) == (
-        Net("")
-        .add(Net("B"), 6)
-        .add(Net("").add(Net("A"), 5).add(Net("C"), 3).add(Net("E"), 4), 5)
-        .add(Net("D"), 11)
+        Node("")
+        .add(Node("B"), 6)
+        .add(Node("").add(Node("A"), 5).add(Node("C"), 3).add(Node("E"), 4), 5)
+        .add(Node("D"), 11)
     )
 
     assert newick.parse(
@@ -129,28 +129,28 @@ def test_phylip():
             dog:25.46154
         );"""
     ) == (
-        Net("")
-        .add(Net("")
-            .add(Net("raccoon"), 19.19959)
-            .add(Net("bear"), 6.80041),
+        Node("")
+        .add(Node("")
+            .add(Node("raccoon"), 19.19959)
+            .add(Node("bear"), 6.80041),
             0.84600
         )
-        .add(Net("")
-             .add(Net("")
-                  .add(Net("sea lion"), 11.99700)
-                  .add(Net("seal"), 12.00300),
+        .add(Node("")
+             .add(Node("")
+                  .add(Node("sea lion"), 11.99700)
+                  .add(Node("seal"), 12.00300),
                   7.52973
              )
-             .add(Net("")
-                  .add(Net("")
-                       .add(Net("monkey"), 100.85930)
-                       .add(Net("cat"), 47.14069),
+             .add(Node("")
+                  .add(Node("")
+                       .add(Node("monkey"), 100.85930)
+                       .add(Node("cat"), 47.14069),
                        20.59201
                   )
-                  .add(Net("weasel"), 18.87953),
+                  .add(Node("weasel"), 18.87953),
                   2.09460
              ),
              3.87382
         )
-        .add(Net("dog"), 25.46154)
+        .add(Node("dog"), 25.46154)
     )

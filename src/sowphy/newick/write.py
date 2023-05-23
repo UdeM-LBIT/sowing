@@ -1,4 +1,4 @@
-from sowing.net import Net
+from sowing.node import Node
 from sowing.traversal import Order, traverse, transform
 
 
@@ -18,15 +18,15 @@ def map_string(data: str):
     return data.replace(" ", "_")
 
 
-def map_node(node: Net, _):
+def map_node(node: Node, _):
     if node.children:
         children = "(" + ",".join(map(map_edge, node.children)) + ")"
     else:
         children = ""
 
-    return Net(children + map_string(node.data)), _
+    return Node(children + map_string(node.data)), _
 
 
-def write(net: Net):
-    """Encode a network into a Newick string."""
-    return transform(map_node, traverse(net, Order.Post)).data + ";"
+def write(root: Node):
+    """Encode a tree into a Newick string."""
+    return transform(map_node, traverse(root, Order.Post)).data + ";"

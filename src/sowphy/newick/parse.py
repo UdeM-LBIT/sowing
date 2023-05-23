@@ -2,7 +2,7 @@ from typing import Any, Iterator
 from collections import deque
 from enum import Enum, auto
 from dataclasses import dataclass
-from sowing.net import Net
+from sowing.node import Node
 
 
 class ParseError(Exception):
@@ -170,12 +170,12 @@ class ParseState(Enum):
     Finish = auto()
 
 
-def parse_chain(data: str) -> tuple[Net, int]:
+def parse_chain(data: str) -> tuple[Node, int]:
     """
-    Chainable parser for single networks encoded as Newick strings.
+    Chainable parser for single trees encoded as Newick strings.
 
     :param data: input data stream
-    :return: parsed network and ending position
+    :return: parsed tree and ending position in the string
     """
     nodes = []
     tokens = BufferedIterator(tokenize(data))
@@ -185,7 +185,7 @@ def parse_chain(data: str) -> tuple[Net, int]:
         match state:
             case ParseState.NodeStart:
                 # Start parsing a new node
-                nodes.append(Net(""))
+                nodes.append(Node(""))
 
                 match (token := next(tokens)).kind:
                     case TokenKind.Open:
@@ -273,9 +273,9 @@ def parse_chain(data: str) -> tuple[Net, int]:
     return nodes.pop(), token.end
 
 
-def parse(data: str) -> Net:
-    """Parse a single network encoded as a Newick string."""
-    net, pos = parse_chain(data)
+def parse(data: str) -> Node:
+    """Parse a single tree encoded as a Newick string."""
+    node, pos = parse_chain(data)
 
     if data[pos:].strip(WHITESPACE):
         raise ParseError(
@@ -283,16 +283,16 @@ def parse(data: str) -> Net:
             pos, len(data)
         )
 
-    return net
+    return node
 
 
-def parse_all(data: str) -> list[Net]:
-    """Parse a sequence of networks encoded as Newick strings."""
+def parse_all(data: str) -> list[Node]:
+    """Parse a sequence of trees encoded as Newick strings."""
     result = []
 
     while data.strip(WHITESPACE):
-        net, pos = parse_chain(data)
-        result.append(net)
+        node, pos = parse_chain(data)
+        result.append(node)
         data = data[pos:]
 
     return result

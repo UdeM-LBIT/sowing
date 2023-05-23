@@ -1,16 +1,16 @@
-from sowing.net import Net
+from sowing.node import Node
 from sowing.traversal import Order, traverse, transform
 
 
 def test_traverse():
     root = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(
-            Net("e")
-            .add(Net("f"))
-            .add(Net("g"))
-            .add(Net("h").add(Net("i")))
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
         ))
     )
 
@@ -29,23 +29,23 @@ def test_traverse():
 
 def test_transform_relabel():
     before = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(
-            Net("e")
-            .add(Net("f"))
-            .add(Net("g"))
-            .add(Net("h").add(Net("i")))
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
         ))
     )
     after = (
-        Net("aa")
-        .add(Net("bb").add(Net("cc")))
-        .add(Net("dd").add(
-            Net("ee")
-            .add(Net("ff"))
-            .add(Net("gg"))
-            .add(Net("hh").add(Net("ii")))
+        Node("aa")
+        .add(Node("bb").add(Node("cc")))
+        .add(Node("dd").add(
+            Node("ee")
+            .add(Node("ff"))
+            .add(Node("gg"))
+            .add(Node("hh").add(Node("ii")))
         ))
     )
 
@@ -60,19 +60,19 @@ def test_transform_relabel():
 
 def test_transform_replace():
     before = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(
-            Net("e")
-            .add(Net("f"))
-            .add(Net("g"))
-            .add(Net("h").add(Net("i")))
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
         ))
     )
     after = (
-        Net("a")
-        .add(Net("c"))
-        .add(Net("e").add(Net("f")).add(Net("g")).add(Net("i")))
+        Node("a")
+        .add(Node("c"))
+        .add(Node("e").add(Node("f")).add(Node("g")).add(Node("i")))
     )
 
     # Remove all unary nodes (preorder or postorder)
@@ -89,20 +89,20 @@ def test_transform_replace():
 
 def test_transform_fold():
     before = (
-        Net(int.__mul__)
-        .add(Net(int.__add__)
-             .add(Net(6))
-             .add(Net(2))
+        Node(int.__mul__)
+        .add(Node(int.__add__)
+             .add(Node(6))
+             .add(Node(2))
         )
-        .add(Net(int.__floordiv__)
-             .add(Net(18))
-             .add(Net(int.__mul__)
-                  .add(Net(2))
-                  .add(Net(3))
+        .add(Node(int.__floordiv__)
+             .add(Node(18))
+             .add(Node(int.__mul__)
+                  .add(Node(2))
+                  .add(Node(3))
              )
         )
     )
-    after = Net(24)
+    after = Node(24)
 
     # Fold arithmetical expressions to their result (postorder only)
     def fold_expression(node, _):
@@ -110,21 +110,21 @@ def test_transform_fold():
             return node, _
 
         args = map(lambda child: child[0].data, node.children)
-        return Net(node.data(*args)), _
+        return Node(node.data(*args)), _
 
     assert transform(fold_expression, traverse(before)) == after
     assert transform(fold_expression, traverse(before, Order.Post)) == after
 
 
 def test_transform_expand():
-    before = Net(3)
-    after_pre = Net(3).add(Net(2).add(Net(1).add(Net(0))))
-    after_post = Net(3).add(Net(2))
+    before = Node(3)
+    after_pre = Node(3).add(Node(2).add(Node(1).add(Node(0))))
+    after_post = Node(3).add(Node(2))
 
     # Expand nodes according to their value
     def expand_value(node, _):
         if node.data > 0:
-            return node.add(Net(node.data - 1)), _
+            return node.add(Node(node.data - 1)), _
 
         return node, _
 
@@ -135,23 +135,23 @@ def test_transform_expand():
 
 def test_transform_depth():
     before = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(
-            Net("e")
-            .add(Net("f"))
-            .add(Net("g"))
-            .add(Net("h").add(Net("i")))
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
         ))
     )
     after = (
-        Net(0)
-        .add(Net(1).add(Net(2)))
-        .add(Net(1).add(
-            Net(2)
-            .add(Net(3))
-            .add(Net(3))
-            .add(Net(3).add(Net(4)))
+        Node(0)
+        .add(Node(1).add(Node(2)))
+        .add(Node(1).add(
+            Node(2)
+            .add(Node(3))
+            .add(Node(3))
+            .add(Node(3).add(Node(4)))
         ))
     )
 

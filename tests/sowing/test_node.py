@@ -1,10 +1,10 @@
-from sowing.net import Net, Zipper
+from sowing.node import Node, Zipper
 
 
 def test_build():
-    left = Net("b").add(Net("d").add(Net("e")))
-    right = Net("c")
-    root = Net("a").add(left).add(right)
+    left = Node("b").add(Node("d").add(Node("e")))
+    right = Node("c")
+    root = Node("a").add(left).add(right)
 
     assert root.data == "a"
     assert len(root.children) == 2
@@ -13,11 +13,11 @@ def test_build():
 
 
 def test_edges():
-    end = Net("e")
-    mid = Net("d").add(end, "last edge")
-    left = Net("b").add(mid)
-    right = Net("c")
-    root = Net("a").add(left, "edge 1").add(right, "edge 2")
+    end = Node("e")
+    mid = Node("d").add(end, "last edge")
+    left = Node("b").add(mid)
+    right = Node("c")
+    root = Node("a").add(left, "edge 1").add(right, "edge 2")
 
     assert (left, "edge 1") in root.children
     assert (right, "edge 2") in root.children
@@ -26,42 +26,42 @@ def test_edges():
 
 
 def test_repeat():
-    root = Net().add(Net()).add(Net())
+    root = Node().add(Node()).add(Node())
 
     assert len(root.children) == 2
-    assert root.children[0] == (Net(), None)
-    assert root.children[1] == (Net(), None)
+    assert root.children[0] == (Node(), None)
+    assert root.children[1] == (Node(), None)
 
 
 def test_eq():
-    root1 = Net("a") \
-        .add(Net("b").add(Net("d").add(Net("e")))) \
-        .add(Net("c"))
+    root1 = Node("a") \
+        .add(Node("b").add(Node("d").add(Node("e")))) \
+        .add(Node("c"))
 
-    root2 = Net("a") \
-        .add(Net("b").add(Net("d").add(Net("e")))) \
-        .add(Net("c"))
+    root2 = Node("a") \
+        .add(Node("b").add(Node("d").add(Node("e")))) \
+        .add(Node("c"))
 
-    root3 = Net("a") \
-        .add(Net("c")) \
-        .add(Net("b").add(Net("d").add(Net("e"))))
+    root3 = Node("a") \
+        .add(Node("c")) \
+        .add(Node("b").add(Node("d").add(Node("e"))))
 
     assert root1 == root2
     assert root1 != root3
     assert root2 != root3
 
-    subtree1 = Net().add(Net()).add(Net())
-    subtree2 = Net().add(Net())
-    repeat1 = Net().add(subtree1).add(subtree1)
-    repeat2 = Net().add(subtree1).add(subtree1)
+    subtree1 = Node().add(Node()).add(Node())
+    subtree2 = Node().add(Node())
+    repeat1 = Node().add(subtree1).add(subtree1)
+    repeat2 = Node().add(subtree1).add(subtree1)
 
     assert subtree1 != subtree2
     assert repeat1 == repeat2
 
 
 def test_modify():
-    root = Net("a")
-    left = Net("b")
+    root = Node("a")
+    left = Node("b")
 
     root.label("w")
     assert root.data == "a"
@@ -71,48 +71,48 @@ def test_modify():
     root = root.label("a")
 
     root.add(left)
-    assert root == Net("a")
+    assert root == Node("a")
 
     root = root.add(left)
-    assert root == Net("a").add(Net("b"))
+    assert root == Node("a").add(Node("b"))
 
     root = root.add(left, "data")
-    assert root == Net("a").add(Net("b")).add(Net("b"), "data")
+    assert root == Node("a").add(Node("b")).add(Node("b"), "data")
 
     root.pop(0)
-    assert root == Net("a").add(Net("b")).add(Net("b"), "data")
+    assert root == Node("a").add(Node("b")).add(Node("b"), "data")
 
     root = root.pop(0)
-    assert root == Net("a").add(Net("b"), "data")
+    assert root == Node("a").add(Node("b"), "data")
 
     root = root.pop()
-    assert root == Net("a")
+    assert root == Node("a")
 
     root = root.add(left, "before")
     root = root.add(left, "after")
-    assert root == Net("a").add(Net("b"), "before").add(Net("b"), "after")
+    assert root == Node("a").add(Node("b"), "before").add(Node("b"), "after")
 
     root = root.replace(0, data="replaced")
-    assert root == Net("a").add(Net("b"), "replaced").add(Net("b"), "after")
+    assert root == Node("a").add(Node("b"), "replaced").add(Node("b"), "after")
 
-    root = root.replace(1, child=Net("w"))
-    assert root == Net("a").add(Net("b"), "replaced").add(Net("w"), "after")
+    root = root.replace(1, child=Node("w"))
+    assert root == Node("a").add(Node("b"), "replaced").add(Node("w"), "after")
 
 
 def test_hashable():
-    assert hash(Net(42)) != hash(Net(1337))
-    assert hash(Net(1337)) == hash(Net(1337))
+    assert hash(Node(42)) != hash(Node(1337))
+    assert hash(Node(1337)) == hash(Node(1337))
 
     seen = set()
-    seen.add(Net("a").add(Net("b")).add(Net("c")))
+    seen.add(Node("a").add(Node("b")).add(Node("c")))
 
-    assert Net("a").add(Net("b")).add(Net("c")) in seen
-    assert Net("a") not in seen
+    assert Node("a").add(Node("b")).add(Node("c")) in seen
+    assert Node("a") not in seen
 
-    seen.add(Net("a"))
+    seen.add(Node("a"))
     assert len(seen) == 2
 
-    seen.add(Net("a").add(Net("b"), "edge b").add(Net("c"), "edge c"))
+    seen.add(Node("a").add(Node("b"), "edge b").add(Node("c"), "edge c"))
     assert len(seen) == 3
 
 
@@ -121,15 +121,15 @@ def test_hash_collisions():
     repeats = 10_000
 
     for index in range(repeats):
-        seen.add(hash(Net(index)))
+        seen.add(hash(Node(index)))
 
     assert len(seen) == repeats
 
 
 def test_zipper_navigate():
-    left = Net("b").add(Net("d").add(Net("e"), "4"), "3")
-    right = Net("c")
-    root = Net("a").add(left, "1").add(right, "2")
+    left = Node("b").add(Node("d").add(Node("e"), "4"), "3")
+    right = Node("c")
+    root = Node("a").add(left, "1").add(right, "2")
 
     zipper = root.unzip()
 
@@ -144,7 +144,7 @@ def test_zipper_navigate():
     assert zipper.node == left
     assert not zipper.is_root()
     assert zipper.thread == (Zipper.Bead(
-        origin=Net("a").add(right, "2"),
+        origin=Node("a").add(right, "2"),
         data="1",
         index=0,
     ),)
@@ -167,16 +167,16 @@ def test_zipper_navigate():
 
 
 def test_zipper_edit():
-    left = Net("b").add(Net("d").add(Net("e"), "4"), "3")
-    right = Net("c")
-    root = Net("a").add(left, "1").add(right, "2")
+    left = Node("b").add(Node("d").add(Node("e"), "4"), "3")
+    right = Node("c")
+    root = Node("a").add(left, "1").add(right, "2")
 
     zipper = root.unzip().down(1)
     zipper = zipper.replace(zipper.node.label("w"))
     assert zipper.node.data == "w"
 
     root = zipper.zip()
-    assert root == Net("a").add(left, "1").add(Net("w"), "2")
+    assert root == Node("a").add(left, "1").add(Node("w"), "2")
 
     zipper = root.unzip().down(0)
     zipper = zipper.replace(zipper.node.replace(0, data="8"))
@@ -185,14 +185,14 @@ def test_zipper_edit():
 
     root = zipper.zip()
     assert root == (
-        Net("a")
-        .add(Net("b").add(Net("d").add(Net("e"), "4"), "8"), "1")
-        .add(Net("w"), "2")
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"), "4"), "8"), "1")
+        .add(Node("w"), "2")
     )
 
 
 def test_zipper_next_prev():
-    root = Net("a")
+    root = Node("a")
     zipper = root.unzip()
 
     assert zipper.next() == zipper
@@ -201,13 +201,13 @@ def test_zipper_next_prev():
     assert zipper.prev(preorder=True) == zipper
 
     root = (
-        Net("a")
-        .add(Net("b").add(Net("c")))
-        .add(Net("d").add(
-            Net("e")
-            .add(Net("f"))
-            .add(Net("g"))
-            .add(Net("h").add(Net("i")))
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
         ))
     )
     zipper = root.unzip()
