@@ -1,5 +1,5 @@
 from sowing.net import Net
-from sowing import newick
+from sowphy import newick
 
 
 def test_topology():

@@ -1,8 +1,8 @@
 from typing import Any, Iterator
 from collections import deque
-from ..net import Net
 from enum import Enum, auto
 from dataclasses import dataclass
+from sowing.net import Net
 
 
 class ParseError(Exception):

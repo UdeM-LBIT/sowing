@@ -1,5 +1,5 @@
-from ..net import Net
-from ..traversal import Order, traverse, transform
+from sowing.net import Net
+from sowing.traversal import Order, traverse, transform
 from xml.etree import ElementTree as ET
 
 
