@@ -3,14 +3,10 @@ from dataclasses import dataclass, replace, field
 from enum import Enum, auto
 
 
-class _Empty(Enum):
-    Marker = auto()
-
-
 @dataclass(frozen=True, slots=True)
 class Node:
     data: Hashable = None
-    children: tuple[tuple[Self, Hashable]] = ()
+    children: tuple[Self] = ()
     _hash: int = field(init=False, repr=False, compare=False, default=0)
 
     def __post_init__(self):
@@ -29,12 +25,11 @@ class Node:
         """
         return replace(self, data=data)
 
-    def add(self, child: Self, data: Hashable = None, index: int = -1) -> Self:
+    def add(self, child: Self, index: int = -1) -> Self:
         """
         Add a child to this node.
 
         :param child: node to link to
-        :param data: data attached to the link
         :param index: index before which to insert the new child
             (default: insert at the end)
         :returns: updated node
@@ -42,11 +37,9 @@ class Node:
         if index == -1:
             index = len(self.children)
 
-        return replace(
-            self,
-            children=self.children[:index] +
-                ((child, data),) + self.children[index:],
-        )
+        before = self.children[:index]
+        after = self.children[index:]
+        return replace(self, children=before + (child,) + after)
 
     def pop(self, index: int = -1) -> Self:
         """
@@ -59,36 +52,21 @@ class Node:
         if index == -1:
             index = len(self.children) - 1
 
-        return replace(
-            self,
-            children=self.children[:index] + self.children[index + 1:],
-        )
+        before = self.children[:index]
+        after = self.children[index + 1:]
+        return replace(self, children=before + after)
 
-    def replace(
-        self,
-        index: int,
-        child: Self|_Empty = _Empty.Marker,
-        data: Hashable|_Empty = _Empty.Marker,
-    ) -> Self:
+    def replace(self, index: int, child: Self) -> Self:
         """
         Replace one of the children of this node.
 
         :param index: index of the child to replace
-        :param child: new child node (default: leave unchanged)
-        :param data: new link data (default: leave unchanged)
+        :param child: new child node
         :returns: updated node
         """
-        if child == _Empty.Marker:
-            child = self.children[index][0]
-
-        if data == _Empty.Marker:
-            data = self.children[index][1]
-
-        return replace(
-            self,
-            children=self.children[:index] +
-                ((child, data),) + self.children[index + 1:],
-        )
+        before = self.children[:index]
+        after = self.children[index + 1:]
+        return replace(self, children=before + (child,) + after)
 
     def unzip(self) -> "Zipper":
         """Make a zipper for this subtree pointing on its root."""
@@ -100,7 +78,6 @@ class Zipper:
     @dataclass(frozen=True, slots=True)
     class Bead:
         origin: Node
-        data: Hashable
         index: int
 
     node: Node
@@ -136,16 +113,10 @@ class Zipper:
             raise IndexError("child index out of range")
 
         index %= len(children)
-        child, data = children[index]
+        child = children[index]
 
-        return Zipper(
-            node=child,
-            thread=self.thread + (self.Bead(
-                origin=self.node.pop(index),
-                data=data,
-                index=index,
-            ),),
-        )
+        bead = self.Bead(origin=self.node.pop(index), index=index)
+        return Zipper(node=child, thread=self.thread + (bead,))
 
     def is_root(self) -> bool:
         """Test whether the pointed node is a root node."""
@@ -158,7 +129,7 @@ class Zipper:
 
         bead = self.thread[-1]
         return Zipper(
-            node=bead.origin.add(self.node, bead.data, bead.index),
+            node=bead.origin.add(self.node, bead.index),
             thread=self.thread[:-1],
         )
 

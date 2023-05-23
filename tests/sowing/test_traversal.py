@@ -78,7 +78,7 @@ def test_transform_replace():
     # Remove all unary nodes (preorder or postorder)
     def remove_unary(node, _):
         if len(node.children) == 1:
-            return node.children[0][0], _
+            return node.children[0], _
 
         return node, _
 
@@ -109,7 +109,7 @@ def test_transform_fold():
         if type(node.data) == int:
             return node, _
 
-        args = map(lambda child: child[0].data, node.children)
+        args = map(lambda child: child.data, node.children)
         return Node(node.data(*args)), _
 
     assert transform(fold_expression, traverse(before)) == after
