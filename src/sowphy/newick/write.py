@@ -2,15 +2,6 @@ from sowing.node import Node
 from sowing.traversal import Order, traverse, transform
 
 
-def map_edge(edge):
-    child, length = edge
-
-    if length is None:
-        return child.data
-
-    return f"{child.data}:{str(length)}"
-
-
 def map_string(data: str):
     if any(char in "(),:;'\t\n" for char in data):
         return "'" + data.replace("'", "''") + "'"
@@ -20,11 +11,16 @@ def map_string(data: str):
 
 def map_node(node: Node, _):
     if node.children:
-        children = "(" + ",".join(map(map_edge, node.children)) + ")"
+        data = "(" + ",".join(node.data for node in node.children) + ")"
     else:
-        children = ""
+        data = ""
 
-    return Node(children + map_string(node.data)), _
+    data += map_string(node.data.name)
+
+    if node.data.branch_length is not None:
+        data += f":{str(node.data.branch_length)}"
+
+    return Node(data), _
 
 
 def write(root: Node):
