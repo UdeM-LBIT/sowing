@@ -1,17 +1,20 @@
 from dataclasses import dataclass
 from typing import Hashable, Optional
 from immutables import Map
+from sowing.util import repr_default
 
 
 Color = tuple[int, int, int, int]
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Confidence:
     value: float
     stddev: Optional[float] = None
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Taxonomy:
     id: Optional[str] = None
@@ -21,6 +24,7 @@ class Taxonomy:
     authority: Optional[str] = None
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Property:
     applies_to: str
@@ -28,6 +32,7 @@ class Property:
     value: Hashable
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Clade:
     name: str = ""

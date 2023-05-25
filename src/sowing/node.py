@@ -1,8 +1,10 @@
 from typing import Hashable, Self
 from dataclasses import dataclass, replace, field
 from enum import Enum, auto
+from .util import repr_default
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Node:
     data: Hashable = None
