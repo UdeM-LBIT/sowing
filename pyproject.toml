@@ -24,10 +24,16 @@ dependencies = [
 "Homepage" = "https://github.com/matteodelabre/sowing"
 "Bug Tracker" = "https://github.com/matteodelabre/sowing/issues"
 
-[tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
+[tool.hatch.build]
+packages = [
+    "src/sowing",
+    "src/sowphy",
 ]
-pythonpath = [
-    "src"
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest",
 ]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest"
