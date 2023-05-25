@@ -162,3 +162,44 @@ def test_transform_depth():
     assert maptree(depth, traverse(before)) == after
     assert maptree(depth, traverse(before, Order.Pre)) == after
     assert maptree(depth, traverse(before, Order.Post)) == after
+
+
+def test_transform_visits():
+    before = (
+        Node(0)
+        .add(Node(0).add(Node(0)))
+        .add(Node(0).add(
+            Node(0)
+            .add(Node(0))
+            .add(Node(0))
+            .add(Node(0).add(Node(0)))
+        ))
+    )
+    after_pre_post = (
+        Node(1)
+        .add(Node(1).add(Node(1)))
+        .add(Node(1).add(
+            Node(1)
+            .add(Node(1))
+            .add(Node(1))
+            .add(Node(1).add(Node(1)))
+        ))
+    )
+    after_euler = (
+        Node(3)
+        .add(Node(2).add(Node(1)))
+        .add(Node(2).add(
+            Node(4)
+            .add(Node(1))
+            .add(Node(1))
+            .add(Node(2).add(Node(1)))
+        ))
+    )
+
+    def visit(node):
+        return node.label(node.data + 1)
+
+    assert maptree(visit, traverse(before)) == after_pre_post
+    assert maptree(visit, traverse(before, Order.Pre)) == after_pre_post
+    assert maptree(visit, traverse(before, Order.Post)) == after_pre_post
+    assert maptree(visit, traverse(before, Order.Euler)) == after_euler
