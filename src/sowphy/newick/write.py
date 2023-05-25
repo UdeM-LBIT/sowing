@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.traversal import Order, traverse, transform
+from sowing.traversal import Order, traverse, maptree
 
 
 def map_string(data: str):
@@ -25,4 +25,4 @@ def map_node(node: Node):
 
 def write(root: Node):
     """Encode a tree into a Newick string."""
-    return transform(map_node, traverse(root, Order.Post)).data + ";"
+    return maptree(map_node, traverse(root, Order.Post)).data + ";"

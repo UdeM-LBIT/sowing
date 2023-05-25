@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.traversal import Order, traverse, transform
+from sowing.traversal import Order, traverse, maptree
 
 
 def test_traverse():
@@ -53,9 +53,9 @@ def test_transform_relabel():
     def relabel(node):
         return node.label(node.data * 2)
 
-    assert transform(relabel, traverse(before)) == after
-    assert transform(relabel, traverse(before, Order.Pre)) == after
-    assert transform(relabel, traverse(before, Order.Post)) == after
+    assert maptree(relabel, traverse(before)) == after
+    assert maptree(relabel, traverse(before, Order.Pre)) == after
+    assert maptree(relabel, traverse(before, Order.Post)) == after
 
 
 def test_transform_replace():
@@ -82,9 +82,9 @@ def test_transform_replace():
 
         return node
 
-    assert transform(remove_unary, traverse(before)) == after
-    assert transform(remove_unary, traverse(before, Order.Pre)) == after
-    assert transform(remove_unary, traverse(before, Order.Post)) == after
+    assert maptree(remove_unary, traverse(before)) == after
+    assert maptree(remove_unary, traverse(before, Order.Pre)) == after
+    assert maptree(remove_unary, traverse(before, Order.Post)) == after
 
 
 def test_transform_fold():
@@ -112,8 +112,8 @@ def test_transform_fold():
         args = map(lambda child: child.data, node.children)
         return Node(node.data(*args))
 
-    assert transform(fold_expression, traverse(before)) == after
-    assert transform(fold_expression, traverse(before, Order.Post)) == after
+    assert maptree(fold_expression, traverse(before)) == after
+    assert maptree(fold_expression, traverse(before, Order.Post)) == after
 
 
 def test_transform_expand():
@@ -128,9 +128,9 @@ def test_transform_expand():
 
         return node
 
-    assert transform(expand_value, traverse(before)) == after_post
-    assert transform(expand_value, traverse(before, Order.Pre)) == after_pre
-    assert transform(expand_value, traverse(before, Order.Post)) == after_post
+    assert maptree(expand_value, traverse(before)) == after_post
+    assert maptree(expand_value, traverse(before, Order.Pre)) == after_pre
+    assert maptree(expand_value, traverse(before, Order.Post)) == after_post
 
 
 def test_transform_depth():
@@ -159,6 +159,6 @@ def test_transform_depth():
     def depth(node, thread):
         return node.label(len(thread))
 
-    assert transform(depth, traverse(before)) == after
-    assert transform(depth, traverse(before, Order.Pre)) == after
-    assert transform(depth, traverse(before, Order.Post)) == after
+    assert maptree(depth, traverse(before)) == after
+    assert maptree(depth, traverse(before, Order.Pre)) == after
+    assert maptree(depth, traverse(before, Order.Post)) == after

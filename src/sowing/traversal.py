@@ -102,7 +102,7 @@ def traverse(
             raise ValueError(order)
 
 
-def transform(
+def maptree(
     func: Callable[[Node], Node] | Callable[[Node, tuple[Zipper.Bead]], Node],
     traversal: Traversal,
 ) -> Node:
