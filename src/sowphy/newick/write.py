@@ -9,7 +9,7 @@ def map_string(data: str):
     return data.replace(" ", "_")
 
 
-def map_node(node: Node, _):
+def map_node(node: Node):
     if node.children:
         data = "(" + ",".join(node.data for node in node.children) + ")"
     else:
@@ -20,7 +20,7 @@ def map_node(node: Node, _):
     if node.data.branch_length is not None:
         data += f":{str(node.data.branch_length)}"
 
-    return Node(data), _
+    return Node(data)
 
 
 def write(root: Node):

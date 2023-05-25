@@ -1,5 +1,6 @@
 from typing import Callable, Generator
 from enum import Enum, auto
+from inspect import signature
 from .node import Node, Zipper
 
 
@@ -102,22 +103,28 @@ def traverse(
 
 
 def transform(
-    func: Callable[[Node, tuple[Zipper.Bead]], tuple[Node, tuple[Zipper.Bead]]],
+    func: Callable[[Node], Node] | Callable[[Node, tuple[Zipper.Bead]], Node],
     traversal: Traversal,
 ) -> Node:
     """
     Transform a tree along a given traversal.
 
-    :param func: transformer callback that visits each node and its
-        thread and returns the updated pair
+    :param func: transformer callback that visits each node and returns a node
+        to replace it. The first argument is the visited node, and the second
+        (optional) argument is the thread that leads to that node.
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
     cursor = next(traversal)
+    needs_thread = len(signature(func).parameters) == 2
 
     try:
         while True:
-            cursor = Zipper(*func(cursor.node, cursor.thread))
+            if needs_thread:
+                cursor = cursor.replace(func(cursor.node, cursor.thread))
+            else:
+                cursor = cursor.replace(func(cursor.node))
+
             cursor = traversal.send(cursor)
     except StopIteration as end:
         return end.value

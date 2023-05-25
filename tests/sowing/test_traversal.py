@@ -50,8 +50,8 @@ def test_transform_relabel():
     )
 
     # Double all node names (preorder or postorder)
-    def relabel(node, _):
-        return node.label(node.data * 2), _
+    def relabel(node):
+        return node.label(node.data * 2)
 
     assert transform(relabel, traverse(before)) == after
     assert transform(relabel, traverse(before, Order.Pre)) == after
@@ -76,11 +76,11 @@ def test_transform_replace():
     )
 
     # Remove all unary nodes (preorder or postorder)
-    def remove_unary(node, _):
+    def remove_unary(node):
         if len(node.children) == 1:
-            return node.children[0], _
+            return node.children[0]
 
-        return node, _
+        return node
 
     assert transform(remove_unary, traverse(before)) == after
     assert transform(remove_unary, traverse(before, Order.Pre)) == after
@@ -105,12 +105,12 @@ def test_transform_fold():
     after = Node(24)
 
     # Fold arithmetical expressions to their result (postorder only)
-    def fold_expression(node, _):
+    def fold_expression(node):
         if type(node.data) == int:
-            return node, _
+            return node
 
         args = map(lambda child: child.data, node.children)
-        return Node(node.data(*args)), _
+        return Node(node.data(*args))
 
     assert transform(fold_expression, traverse(before)) == after
     assert transform(fold_expression, traverse(before, Order.Post)) == after
@@ -122,11 +122,11 @@ def test_transform_expand():
     after_post = Node(3).add(Node(2))
 
     # Expand nodes according to their value
-    def expand_value(node, _):
+    def expand_value(node):
         if node.data > 0:
-            return node.add(Node(node.data - 1)), _
+            return node.add(Node(node.data - 1))
 
-        return node, _
+        return node
 
     assert transform(expand_value, traverse(before)) == after_post
     assert transform(expand_value, traverse(before, Order.Pre)) == after_pre
@@ -157,7 +157,7 @@ def test_transform_depth():
 
     # Replace node values by their depth
     def depth(node, thread):
-        return node.label(len(thread)), thread
+        return node.label(len(thread))
 
     assert transform(depth, traverse(before)) == after
     assert transform(depth, traverse(before, Order.Pre)) == after
