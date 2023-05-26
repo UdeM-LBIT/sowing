@@ -1,5 +1,6 @@
 from sowing.node import Node
 from sowing.traversal import Order, traverse, mapnodes
+from ..clade import Clade
 
 
 def map_string(data: str):
@@ -15,10 +16,11 @@ def map_node(node: Node):
     else:
         data = ""
 
-    data += map_string(node.data.name)
+    if isinstance(node.data, Clade):
+        data += map_string(node.data.name)
 
-    if node.data.branch_length is not None:
-        data += f":{str(node.data.branch_length)}"
+        if node.data.branch_length is not None:
+            data += f":{str(node.data.branch_length)}"
 
     return Node(data)
 
