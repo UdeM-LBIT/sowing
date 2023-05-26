@@ -8,7 +8,7 @@ from .util import repr_default
 @dataclass(frozen=True, slots=True)
 class Node:
     data: Hashable = None
-    children: tuple[Self] = ()
+    children: tuple[Self, ...] = ()
     _hash: int = field(init=False, repr=False, compare=False, default=0)
 
     def __post_init__(self):

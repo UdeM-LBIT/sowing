@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Hashable, Optional
+from typing import Hashable
 from immutables import Map
 from sowing.util import repr_default
 
@@ -11,17 +11,17 @@ Color = tuple[int, int, int, int]
 @dataclass(frozen=True, slots=True)
 class Confidence:
     value: float
-    stddev: Optional[float] = None
+    stddev: float | None = None
 
 
 @repr_default
 @dataclass(frozen=True, slots=True)
 class Taxonomy:
-    id: Optional[str] = None
-    code: Optional[str] = None
-    scientific_name: Optional[str] = None
-    common_name: Optional[str] = None
-    authority: Optional[str] = None
+    id: str | None = None
+    code: str | None = None
+    scientific_name: str | None = None
+    common_name: str | None = None
+    authority: str | None = None
 
 
 @repr_default
@@ -36,13 +36,13 @@ class Property:
 @dataclass(frozen=True, slots=True)
 class Clade:
     name: str = ""
-    branch_length: Optional[float] = None
+    branch_length: float | None = None
     confidences: Map[str, Confidence] = Map()
     props: Map[str, Property] = Map()
 
-    width: Optional[float] = None
-    color: Optional[Color] = None
-    taxonomies: tuple[Taxonomy] = ()
+    width: float | None = None
+    color: Color | None = None
+    taxonomies: tuple[Taxonomy, ...] = ()
 
     # TODO
     # sequence: ...

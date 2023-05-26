@@ -1,4 +1,3 @@
-from typing import Optional
 from dataclasses import dataclass, replace
 from sowing import traversal
 from sowing.node import Node
@@ -7,7 +6,7 @@ from .util.partition import Partition
 
 @dataclass(frozen=True, slots=True)
 class Triple:
-    ingroup: tuple[Node]
+    ingroup: tuple[Node, Node]
     outgroup: Node
 
     def is_in(self, nodes) -> bool:
@@ -16,7 +15,7 @@ class Triple:
 
 @dataclass(frozen=True, slots=True)
 class Fan:
-    group: tuple[Node]
+    group: tuple[Node, ...]
 
     def is_in(self, nodes) -> bool:
         return set(self.group) <= set(nodes)
@@ -77,7 +76,7 @@ def build(
     leaves: list[Node],
     triples: list[Triple] = [],
     fans: list[Fan] = [],
-) -> Optional[Node]:
+) -> Node | None:
     """
     Construct a phylogenetic tree satisfying the topology constraints given by
     a set of triples and fans.
@@ -140,7 +139,7 @@ def build(
     return root
 
 
-def supertree(*trees: Node) -> Optional[Node]:
+def supertree(*trees: Node) -> Node | None:
     """
     Build a supertree from a set of phylogenetic trees.
 
