@@ -1,4 +1,4 @@
-from typing import Callable, Generator
+from typing import Callable, Generator, Iterator
 from enum import Enum, auto
 from inspect import signature
 from .node import Node, Zipper
@@ -128,3 +128,8 @@ def maptree(
             cursor = traversal.send(cursor)
     except StopIteration as end:
         return end.value
+
+
+def leaves(root: Node) -> Iterator[Node]:
+    """Retrieve all leaves below a node."""
+    return (zipper.node for zipper in traverse(root) if zipper.is_leaf())
