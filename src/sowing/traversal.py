@@ -102,16 +102,12 @@ def traverse(
             raise ValueError(order)
 
 
-def maptree(
-    func: Callable[[Node], Node] | Callable[[Node, tuple[Zipper.Bead]], Node],
-    traversal: Traversal,
-) -> Node:
+def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
     """
-    Transform a tree along a given traversal.
+    Transform positions on a tree along a given traversal.
 
-    :param func: transformer callback that visits each node and returns a node
-        to replace it. The first argument is the visited node, and the second
-        (optional) argument is the thread that leads to that node.
+    :param func: callback that receives each zipper value along the tree and
+        gets the opportunity to replace parts of it
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
@@ -120,14 +116,21 @@ def maptree(
 
     try:
         while True:
-            if needs_thread:
-                cursor = cursor.replace(func(cursor.node, cursor.thread))
-            else:
-                cursor = cursor.replace(func(cursor.node))
-
-            cursor = traversal.send(cursor)
+            cursor = traversal.send(func(cursor))
     except StopIteration as end:
         return end.value
+
+
+def mapnodes(func: Callable[[Node], Node], traversal: Traversal) -> Node:
+    """
+    Transform the nodes of a tree along a given traversal.
+
+    :param func: callback that receives each node of the tree and
+        gets the opportunity to replace it
+    :param traversal: tree traversal generator
+    :returns: transformed tree
+    """
+    return maptree(lambda zipper: zipper.replace(func(zipper.node)), traversal)
 
 
 def leaves(root: Node) -> Iterator[Node]:

@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.traversal import Order, traverse, maptree
+from sowing.traversal import Order, traverse, maptree, mapnodes, leaves
 
 
 def test_traverse():
@@ -27,7 +27,7 @@ def test_traverse():
     assert_iter_eq(traverse(root, Order.Euler, reverse=True), "adehihegefedabcba")
 
 
-def test_transform_relabel():
+def test_map_relabel():
     before = (
         Node("a")
         .add(Node("b").add(Node("c")))
@@ -53,12 +53,12 @@ def test_transform_relabel():
     def relabel(node):
         return node.label(node.data * 2)
 
-    assert maptree(relabel, traverse(before)) == after
-    assert maptree(relabel, traverse(before, Order.Pre)) == after
-    assert maptree(relabel, traverse(before, Order.Post)) == after
+    assert mapnodes(relabel, traverse(before)) == after
+    assert mapnodes(relabel, traverse(before, Order.Pre)) == after
+    assert mapnodes(relabel, traverse(before, Order.Post)) == after
 
 
-def test_transform_replace():
+def test_map_replace():
     before = (
         Node("a")
         .add(Node("b").add(Node("c")))
@@ -82,12 +82,12 @@ def test_transform_replace():
 
         return node
 
-    assert maptree(remove_unary, traverse(before)) == after
-    assert maptree(remove_unary, traverse(before, Order.Pre)) == after
-    assert maptree(remove_unary, traverse(before, Order.Post)) == after
+    assert mapnodes(remove_unary, traverse(before)) == after
+    assert mapnodes(remove_unary, traverse(before, Order.Pre)) == after
+    assert mapnodes(remove_unary, traverse(before, Order.Post)) == after
 
 
-def test_transform_fold():
+def test_map_fold():
     before = (
         Node(int.__mul__)
         .add(Node(int.__add__)
@@ -112,11 +112,11 @@ def test_transform_fold():
         args = map(lambda child: child.data, node.children)
         return Node(node.data(*args))
 
-    assert maptree(fold_expression, traverse(before)) == after
-    assert maptree(fold_expression, traverse(before, Order.Post)) == after
+    assert mapnodes(fold_expression, traverse(before)) == after
+    assert mapnodes(fold_expression, traverse(before, Order.Post)) == after
 
 
-def test_transform_expand():
+def test_map_expand():
     before = Node(3)
     after_pre = Node(3).add(Node(2).add(Node(1).add(Node(0))))
     after_post = Node(3).add(Node(2))
@@ -128,12 +128,12 @@ def test_transform_expand():
 
         return node
 
-    assert maptree(expand_value, traverse(before)) == after_post
-    assert maptree(expand_value, traverse(before, Order.Pre)) == after_pre
-    assert maptree(expand_value, traverse(before, Order.Post)) == after_post
+    assert mapnodes(expand_value, traverse(before)) == after_post
+    assert mapnodes(expand_value, traverse(before, Order.Pre)) == after_pre
+    assert mapnodes(expand_value, traverse(before, Order.Post)) == after_post
 
 
-def test_transform_depth():
+def test_map_depth():
     before = (
         Node("a")
         .add(Node("b").add(Node("c")))
@@ -156,15 +156,17 @@ def test_transform_depth():
     )
 
     # Replace node values by their depth
-    def depth(node, thread):
-        return node.label(len(thread))
+    def depth(cursor):
+        node = cursor.node
+        thread = cursor.thread
+        return cursor.replace(node.label(len(thread)))
 
     assert maptree(depth, traverse(before)) == after
     assert maptree(depth, traverse(before, Order.Pre)) == after
     assert maptree(depth, traverse(before, Order.Post)) == after
 
 
-def test_transform_visits():
+def test_map_visits():
     before = (
         Node(0)
         .add(Node(0).add(Node(0)))
@@ -199,7 +201,24 @@ def test_transform_visits():
     def visit(node):
         return node.label(node.data + 1)
 
-    assert maptree(visit, traverse(before)) == after_pre_post
-    assert maptree(visit, traverse(before, Order.Pre)) == after_pre_post
-    assert maptree(visit, traverse(before, Order.Post)) == after_pre_post
-    assert maptree(visit, traverse(before, Order.Euler)) == after_euler
+    assert mapnodes(visit, traverse(before)) == after_pre_post
+    assert mapnodes(visit, traverse(before, Order.Pre)) == after_pre_post
+    assert mapnodes(visit, traverse(before, Order.Post)) == after_pre_post
+    assert mapnodes(visit, traverse(before, Order.Euler)) == after_euler
+
+
+def test_leaves():
+    single = Node("a")
+    assert list(leaves(single)) == [Node("a")]
+
+    root = (
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(Node("d").add(
+            Node("e")
+            .add(Node("f"))
+            .add(Node("g"))
+            .add(Node("h").add(Node("i")))
+        ))
+    )
+    assert list(leaves(root)) == list(map(Node, "cfgi"))
