@@ -1,6 +1,6 @@
 from sowing.node import Node
 from sowphy import newick
-from sowphy.clade import Clade
+from sowphy.clade import Clade, Branch
 
 
 def test_topology():
@@ -22,19 +22,22 @@ def test_name():
     assert newick.write(Node(Clade("quote'quote"))) == "'quote''quote';"
     assert newick.write(
         Node(Clade("root"))
-        .add(Node(Clade("left"))).add(Node(Clade("right")))
+        .add(Node(Clade("left")), Branch())
+        .add(Node(Clade("right")), Branch())
     ) == "(left,right)root;"
 
 
 def test_length():
-    assert newick.write(Node(Clade("", 42))) == ":42;"
+    assert newick.write(Node(Clade(""))) == ";"
     assert newick.write(
         Node(Clade("root"))
-        .add(Node(Clade("left", 42))).add(Node(Clade("right", 24)))
+        .add(Node(Clade("left")), Branch(42))
+        .add(Node(Clade("right")), Branch(24))
     ) == "(left:42,right:24)root;"
     assert newick.write(
         Node(Clade("root"))
-        .add(Node(Clade("left", 1.23))).add(Node(Clade("right", 3.21)))
+        .add(Node(Clade("left")), Branch(1.23))
+        .add(Node(Clade("right")), Branch(3.21))
     ) == "(left:1.23,right:3.21)root;"
 
 
@@ -44,35 +47,35 @@ def test_phylip():
 
     assert newick.write(
         Node(Clade(""))
-        .add(Node(Clade("B", 6)))
-        .add(Node(Clade("", 5))
-             .add(Node(Clade("A", 5)))
-             .add(Node(Clade("C", 3)))
-             .add(Node(Clade("E", 4)))
+        .add(Node(Clade("B")), Branch(6))
+        .add(data=Branch(5), node=Node(Clade(""))
+             .add(Node(Clade("A")), Branch(5))
+             .add(Node(Clade("C")), Branch(3))
+             .add(Node(Clade("E")), Branch(4))
         )
-        .add(Node(Clade("D", 11)))
+        .add(Node(Clade("D")), Branch(11))
     ) == "(B:6,(A:5,C:3,E:4):5,D:11);"
 
     assert newick.write(
         Node(Clade(""))
-        .add(Node(Clade("", 0.84600))
-            .add(Node(Clade("raccoon", 19.19959)))
-            .add(Node(Clade("bear", 6.80041))),
+        .add(data=Branch(0.84600), node=Node(Clade(""))
+            .add(Node(Clade("raccoon")), Branch(19.19959))
+            .add(Node(Clade("bear")), Branch(6.80041)),
         )
-        .add(Node(Clade("", 3.87382))
-             .add(Node(Clade("", 7.52973))
-                  .add(Node(Clade("sea lion", 11.99700)))
-                  .add(Node(Clade("seal", 12.00300)))
+        .add(data=Branch(3.87382), node=Node(Clade(""))
+             .add(data=Branch(7.52973), node=Node(Clade(""))
+                  .add(Node(Clade("sea lion")), Branch(11.99700))
+                  .add(Node(Clade("seal")), Branch(12.00300))
              )
-             .add(Node(Clade("", 2.09460))
-                  .add(Node(Clade("", 20.59201))
-                       .add(Node(Clade("monkey", 100.85930)))
-                       .add(Node(Clade("cat", 47.14069)))
+             .add(data=Branch(2.09460), node=Node(Clade(""))
+                  .add(data=Branch(20.59201), node=Node(Clade(""))
+                       .add(Node(Clade("monkey")), Branch(100.85930))
+                       .add(Node(Clade("cat")), Branch(47.14069))
                   )
-                  .add(Node(Clade("weasel", 18.87953))),
+                  .add(Node(Clade("weasel")), Branch(18.87953)),
              ),
         )
-        .add(Node(Clade("dog", 25.46154)))
+        .add(Node(Clade("dog")), Branch(25.46154))
     ) == (
         "((raccoon:19.19959,bear:6.80041):0.846,((sea_lion:11.997,seal:12.003)"
         ":7.52973,((monkey:100.8593,cat:47.14069):20.59201,weasel:18.87953)"

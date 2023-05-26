@@ -68,7 +68,7 @@ def _traverse_euler(node: Node, reverse: bool) -> Traversal:
             if cursor.is_root():
                 return cursor.zip()
             else:
-                pos = cursor.thread[-1].index
+                pos = cursor.index
                 cursor = cursor.up()
                 next_cursor = yield cursor
                 cursor = _none_else(next_cursor, cursor)
@@ -130,7 +130,10 @@ def mapnodes(func: Callable[[Node], Node], traversal: Traversal) -> Node:
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
-    return maptree(lambda zipper: zipper.replace(func(zipper.node)), traversal)
+    return maptree(
+        lambda zipper: zipper.replace(node=func(zipper.node)),
+        traversal,
+    )
 
 
 def leaves(root: Node) -> Iterator[Node]:

@@ -34,9 +34,15 @@ class Property:
 
 @repr_default
 @dataclass(frozen=True, slots=True)
+class Branch:
+    length: float | None = None
+    props: Map[str, Property] = Map()
+
+
+@repr_default
+@dataclass(frozen=True, slots=True)
 class Clade:
     name: str = ""
-    branch_length: float | None = None
     confidences: Map[str, Confidence] = Map()
     props: Map[str, Property] = Map()
 

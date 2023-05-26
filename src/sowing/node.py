@@ -6,100 +6,94 @@ from .util import repr_default
 
 @repr_default
 @dataclass(frozen=True, slots=True)
-class Node:
+class Edge:
+    # Node at end of edge
+    node: "Node"
+
+    # Arbitrary data attached to this edge
     data: Hashable = None
-    children: tuple[Self, ...] = ()
+
+
+@repr_default
+@dataclass(frozen=True, slots=True)
+class Node:
+    # Arbitrary data attached to this node
+    data: Hashable = None
+
+    # Outgoing edges towards child nodes
+    edges: tuple[Edge, ...] = ()
+
+    # Cached hash value (to avoid needlessly traversing the whole tree)
     _hash: int = field(init=False, repr=False, compare=False, default=0)
 
-    def __post_init__(self):
-        # Cache hash to avoid needlessly traversing the whole tree
-        object.__setattr__(self, "_hash", hash((self.data, self.children)))
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_hash", hash((self.data, self.edges)))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self._hash
 
-    def label(self, data: Hashable) -> Self:
-        """
-        Label this node with arbitrary data.
+    def replace(self, **kwargs) -> Self:
+        return replace(self, **kwargs)
 
-        :param data: data to attach to this node
-        :returns: updated node
+    def add(self, node: Self, data: Hashable = None, index: int = -1) -> Self:
         """
-        return replace(self, data=data)
+        Add an outgoing edge to this node.
 
-    def add(self, child: Self, index: int = -1) -> Self:
-        """
-        Add a child to this node.
-
-        :param child: node to link to
-        :param index: index before which to insert the new child
+        :param node: edge target node
+        :param data: optional data attached to the edge
+        :param index: index before which to insert the new edge
             (default: insert at the end)
         :returns: updated node
         """
         if index == -1:
-            index = len(self.children)
+            index = len(self.edges)
 
-        before = self.children[:index]
-        after = self.children[index:]
-        return replace(self, children=before + (child,) + after)
+        before = self.edges[:index]
+        after = self.edges[index:]
+        edge = Edge(node=node, data=data)
+        return self.replace(edges=before + (edge,) + after)
 
     def pop(self, index: int = -1) -> Self:
         """
-        Remove a child from this node.
+        Remove an outgoing edge from this node.
 
-        :param index: index of the child to remove
+        :param index: index of the edge to remove
             (default: remove the last one)
         :returns: updated node
         """
         if index == -1:
-            index = len(self.children) - 1
+            index = len(self.edges) - 1
 
-        before = self.children[:index]
-        after = self.children[index + 1:]
-        return replace(self, children=before + after)
-
-    def replace(self, index: int, child: Self) -> Self:
-        """
-        Replace one of the children of this node.
-
-        :param index: index of the child to replace
-        :param child: new child node
-        :returns: updated node
-        """
-        before = self.children[:index]
-        after = self.children[index + 1:]
-        return replace(self, children=before + (child,) + after)
+        before = self.edges[:index]
+        after = self.edges[index + 1:]
+        return self.replace(edges=before + after)
 
     def unzip(self) -> "Zipper":
         """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
 
 
+@repr_default
 @dataclass(frozen=True, slots=True)
 class Zipper:
-    @dataclass(frozen=True, slots=True)
-    class Bead:
-        origin: Node
-        index: int
-
+    # Currently pointed node
     node: Node
-    thread: tuple[Bead] = ()
 
-    def replace(self, node: Node) -> Self:
-        """
-        Replace the pointed node.
+    # Data attached to the incoming edge
+    data: Hashable | None = None
 
-        When travelling back up, the new node will get attached to
-        the parent in place of the old pointed node.
+    # Child index into the parent node
+    index: int = -1
 
-        :param node: new node
-        :returns: updated zipper
-        """
-        return replace(self, node=node)
+    # Parent pointer, or None if at root
+    parent: Self | None = None
+
+    def replace(self, **kwargs) -> Self:
+        return replace(self, **kwargs)
 
     def is_leaf(self) -> bool:
         """Test whether the pointed node is a leaf node."""
-        return self.node.children == ()
+        return self.node.edges == ()
 
     def down(self, index: int = 0) -> Self:
         """
@@ -109,30 +103,30 @@ class Zipper:
             negative indices are supported (default: first child)
         :returns: updated zipper
         """
-        children = self.node.children
+        edges = self.node.edges
 
-        if index >= len(children):
+        if index >= len(edges):
             raise IndexError("child index out of range")
 
-        index %= len(children)
-        child = children[index]
-
-        bead = self.Bead(origin=self.node.pop(index), index=index)
-        return Zipper(node=child, thread=self.thread + (bead,))
+        index %= len(edges)
+        return Zipper(
+            node=edges[index].node,
+            data=edges[index].data,
+            parent=self.replace(node=self.node.pop(index)),
+            index=index,
+        )
 
     def is_root(self) -> bool:
         """Test whether the pointed node is a root node."""
-        return self.thread == ()
+        return self.parent is None
 
     def up(self) -> Self:
         """Move to the parent of the pointed node."""
         if self.is_root():
             raise IndexError("cannot go up")
 
-        bead = self.thread[-1]
-        return Zipper(
-            node=bead.origin.add(self.node, bead.index),
-            thread=self.thread[:-1],
+        return self.parent.replace(
+            node=self.parent.node.add(self.node, self.data, self.index),
         )
 
     def is_last_sibling(self, direction: int = 1) -> bool:
@@ -148,12 +142,10 @@ class Zipper:
         if direction == 0:
             return False
 
-        bead = self.thread[-1]
-
         if direction < 0:
-            return bead.index == 0
+            return self.index == 0
 
-        return bead.index == len(bead.origin.children)
+        return self.index == len(self.parent.node.edges)
 
     def sibling(self, offset: int = 1) -> Self:
         """
@@ -167,10 +159,8 @@ class Zipper:
         if self.is_root():
             return self
 
-        bead = self.thread[-1]
-        index = bead.index + offset
-        index %= len(bead.origin.children) + 1
-
+        index = self.index + offset
+        index %= len(self.parent.node.edges) + 1
         return self.up().down(index)
 
     def _preorder(self, flip: bool) -> Self:

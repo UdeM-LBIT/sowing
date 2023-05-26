@@ -159,6 +159,15 @@ def test_supertree():
         .add(Node().add(Node("a")).add(Node("b")))
         .add(Node().add(Node("c")).add(Node("d")))
     )
+
+    assert supertree(
+        Node()
+        .add(Node().add(Node("a")), "data left")
+        .add(Node().add(Node("b")), "data right"),
+    ) == (
+        Node().add(Node("a")).add(Node("b"))
+    )
+
     assert supertree(
         Node()
         .add(Node().add(Node("a")).add(Node("b")))

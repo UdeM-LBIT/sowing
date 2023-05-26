@@ -1,4 +1,4 @@
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from sowing import traversal
 from sowing.node import Node
 from .util.partition import Partition
@@ -25,13 +25,13 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
     """
     Break up a phylogenetic tree into triples and fans that encode its topology.
 
-    The output representation uniquely determines the input tree, assuming it
-    does not contain unary nodes or repeated leaves, and disregarding child
-    order and data contained in internal nodes.
+    This implements the BreakUp algorithm from [Ng and Wormald, 1996].
+
+    The output representation uniquely determines the input tree, disregarding
+    unary nodes, repeated leaves, child order, data in internal nodes, and
+    data on edges.
 
     The input tree can be reconstructed using the :func:`build` function.
-
-    This implements the BreakUp algorithm from [Ng and Wormald, 1996].
 
     :param root: input tree to be broken up
     :returns: a tuple containing the list of leaves in the tree, a list of
@@ -41,7 +41,7 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
     fans = []
 
     def extract_parts(cursor):
-        children = cursor.node.children
+        children = tuple(edge.node for edge in cursor.node.edges)
 
         if cursor.is_leaf() or not all(
             cursor.down(i).is_leaf()
@@ -65,7 +65,7 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
 
         outgroup = next(traversal.leaves(base.sibling().node))
         triples.append(Triple(children, outgroup))
-        return base.replace(children[0])
+        return base.replace(node=children[0])
 
     traversal.maptree(extract_parts, traversal.traverse(root))
     leaves = list(traversal.leaves(root))

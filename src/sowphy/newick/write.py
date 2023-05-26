@@ -1,6 +1,6 @@
-from sowing.node import Node
-from sowing.traversal import Order, traverse, mapnodes
-from ..clade import Clade
+from sowing.node import Node, Zipper
+from sowing.traversal import Order, traverse, maptree
+from ..clade import Clade, Branch
 
 
 def quote_string(data: str):
@@ -10,21 +10,24 @@ def quote_string(data: str):
     return data.replace(" ", "_")
 
 
-def write_node(node: Node) -> str:
-    if node.children:
-        data = "(" + ",".join(node.data for node in node.children) + ")"
+def write_node(cursor: Zipper) -> str:
+    node = cursor.node
+
+    if node.edges:
+        data = "(" + ",".join(edge.node.data for edge in node.edges) + ")"
     else:
         data = ""
 
     if isinstance(node.data, Clade):
         data += quote_string(node.data.name)
 
-        if node.data.branch_length is not None:
-            data += f":{str(node.data.branch_length)}"
+    if isinstance(cursor.data, Branch):
+        if cursor.data.length is not None:
+            data += f":{str(cursor.data.length)}"
 
-    return Node(data)
+    return cursor.replace(node=Node(data), data=None)
 
 
 def write(root: Node):
     """Encode a tree into a Newick string."""
-    return mapnodes(write_node, traverse(root, Order.Post)).data + ";"
+    return maptree(write_node, traverse(root, Order.Post)).data + ";"

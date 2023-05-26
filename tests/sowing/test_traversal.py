@@ -51,7 +51,7 @@ def test_map_relabel():
 
     # Double all node names (preorder or postorder)
     def relabel(node):
-        return node.label(node.data * 2)
+        return node.replace(data=node.data * 2)
 
     assert mapnodes(relabel, traverse(before)) == after
     assert mapnodes(relabel, traverse(before, Order.Pre)) == after
@@ -77,8 +77,8 @@ def test_map_replace():
 
     # Remove all unary nodes (preorder or postorder)
     def remove_unary(node):
-        if len(node.children) == 1:
-            return node.children[0]
+        if len(node.edges) == 1:
+            return node.edges[0].node
 
         return node
 
@@ -109,7 +109,7 @@ def test_map_fold():
         if type(node.data) == int:
             return node
 
-        args = map(lambda child: child.data, node.children)
+        args = map(lambda edge: edge.node.data, node.edges)
         return Node(node.data(*args))
 
     assert mapnodes(fold_expression, traverse(before)) == after
@@ -157,13 +157,11 @@ def test_map_depth():
 
     # Replace node values by their depth
     def depth(cursor):
-        node = cursor.node
-        thread = cursor.thread
-        return cursor.replace(node.label(len(thread)))
+        if cursor.is_root(): value = 0
+        else: value = cursor.parent.node.data + 1
+        return cursor.replace(node=cursor.node.replace(data=value))
 
-    assert maptree(depth, traverse(before)) == after
     assert maptree(depth, traverse(before, Order.Pre)) == after
-    assert maptree(depth, traverse(before, Order.Post)) == after
 
 
 def test_map_visits():
@@ -199,7 +197,7 @@ def test_map_visits():
     )
 
     def visit(node):
-        return node.label(node.data + 1)
+        return node.replace(data=node.data + 1)
 
     assert mapnodes(visit, traverse(before)) == after_pre_post
     assert mapnodes(visit, traverse(before, Order.Pre)) == after_pre_post

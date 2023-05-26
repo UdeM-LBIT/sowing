@@ -1,9 +1,9 @@
 from typing import Any, Iterator
 from collections import deque
 from enum import Enum, auto
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from sowing.node import Node
-from ..clade import Clade
+from ..clade import Clade, Branch
 
 
 class ParseError(Exception):
@@ -198,13 +198,13 @@ def parse_chain(data: str) -> tuple[Node, int]:
 
             case ParseState.NodeData:
                 # Parse metadata attached to a node
-                active = nodes.pop()
+                clade = Clade()
+                branch = Branch()
 
                 # Parse node label
                 match (token := next(tokens)).kind:
                     case TokenKind.String:
-                        data = replace(active.data, name=token.value)
-                        active = active.label(data)
+                        clade = Clade(name=token.value)
 
                     case _:
                         tokens.push(token)
@@ -222,9 +222,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
                             )
 
                         try:
-                            length = float(token.value)
-                            data = replace(active.data, branch_length=length)
-                            active = active.label(data)
+                            branch = Branch(length=float(token.value))
                         except ValueError:
                             raise ParseError(
                                 "invalid branch length value",
@@ -242,6 +240,9 @@ def parse_chain(data: str) -> tuple[Node, int]:
                     case _:
                         tokens.push(token)
 
+                active = nodes.pop()
+                active = active.replace(data=clade)
+
                 if not nodes:
                     # Finished parsing the root node
                     state = ParseState.Finish
@@ -249,7 +250,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
                 else:
                     # Attach parsed node to its parent
                     parent = nodes.pop()
-                    nodes.append(parent.add(active))
+                    nodes.append(parent.add(active, data=branch))
 
                     match (token := next(tokens)).kind:
                         case TokenKind.Comma:

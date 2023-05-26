@@ -1,4 +1,4 @@
-from sowing.node import Node, Zipper
+from sowing.node import Node, Edge, Zipper
 import pytest
 
 
@@ -8,14 +8,16 @@ def test_build():
     root = Node("a").add(left).add(right)
 
     assert root.data == "a"
-    assert root.children == (left, right)
+    assert root.edges == (Edge(left), Edge(right))
+
+    root = Node("a").add(left, "b").add(right, "c")
+
+    assert root.edges == (Edge(left, "b"), Edge(right, "c"))
 
 
 def test_repeat():
     root = Node().add(Node()).add(Node())
-
-    assert len(root.children) == 2
-    assert root.children == (Node(), Node())
+    assert root.edges == (Edge(Node()), Edge(Node()))
 
 
 def test_eq():
@@ -49,12 +51,12 @@ def test_modify():
     child1 = Node("b")
     child2 = Node("c")
 
-    root.label("w")
+    root.replace(data="w")
     assert root.data == "a"
 
-    root = root.label("w")
+    root = root.replace(data="w")
     assert root.data == "w"
-    root = root.label("a")
+    root = root.replace(data="a")
 
     root.add(child1)
     assert root == Node("a")
@@ -80,10 +82,10 @@ def test_modify():
     root = root.add(child2, index=0)
     assert root == Node("a").add(Node("c")).add(Node("b"))
 
-    root = root.replace(index=0, child=child1)
+    root = root.pop(0).add(child1, index=0)
     assert root == Node("a").add(Node("b")).add(Node("b"))
 
-    root = root.replace(index=1, child=child2)
+    root = root.pop(1).add(child2, index=1)
     assert root == Node("a").add(Node("b")).add(Node("c"))
 
 
@@ -127,7 +129,8 @@ def test_zip_unzip():
     zipper = root.unzip()
     assert zipper.node == root
     assert zipper.is_root()
-    assert zipper.thread == ()
+    assert zipper.parent is None
+    assert zipper.index == -1
     assert zipper.zip() == root
 
 
@@ -143,10 +146,10 @@ def test_zipper_thread():
 
     zipper = zipper.down(0)
     assert zipper.node == left
-    assert zipper.thread == (Zipper.Bead(
-        origin=Node("a").add(right),
-        index=0,
-    ),)
+    assert zipper.parent is not None
+    assert zipper.parent.node == Node("a").add(right)
+    assert zipper.parent.parent is None
+    assert zipper.index == 0
 
     assert root.unzip().down().down().zip() == root
 
@@ -204,15 +207,15 @@ def test_zipper_edit():
     root = Node("a").add(left).add(right)
 
     zipper = root.unzip().down(1)
-    zipper = zipper.replace(zipper.node.label("w"))
+    zipper = zipper.replace(node=zipper.node.replace(data="w"))
     assert zipper.node.data == "w"
 
     root = zipper.zip()
     assert root == Node("a").add(left).add(Node("w"))
 
     zipper = root.unzip().down(0)
-    zipper = zipper.replace(zipper.node.replace(index=0, child=Node("z")))
-    assert zipper.node.children[0] == Node("z")
+    zipper = zipper.replace(node=zipper.node.pop(0).add(Node("z"), index=0))
+    assert zipper.node.edges[0].node == Node("z")
 
     root = zipper.zip()
     assert root == Node("a").add(Node("b").add(Node("z"))).add(Node("w"))
