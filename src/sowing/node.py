@@ -135,36 +135,43 @@ class Zipper:
             thread=self.thread[:-1],
         )
 
-    def has_sibling(self, index: int = 1) -> bool:
+    def is_last_sibling(self, direction: int = 1) -> bool:
         """
-        Test whether a sibling exists for the pointed node.
+        Test whether the pointed node is the last sibling in a direction.
 
-        :param index: sibling offset relative to the current node;
-            positive for right, negative for left
-            (default: test for the next sibling to the right)
+        :param direction: positive number to test in left to right order,
+            negative number to test in right to left order
         """
         if self.is_root():
-            return False
-
-        if index == 0:
             return True
 
-        bead = self.thread[-1]
-        return 0 <= bead.index + index < len(bead.origin.children) + 1
+        if direction == 0:
+            return False
 
-    def sibling(self, index: int = 1) -> Self:
+        bead = self.thread[-1]
+
+        if direction < 0:
+            return bead.index == 0
+
+        return bead.index == len(bead.origin.children)
+
+    def sibling(self, offset: int = 1) -> Self:
         """
         Move to a sibling of the pointed node.
 
-        :param index: sibling offset relative to the current node;
-            positive for right, negative for left
-            (default: next sibling to the right)
+        :param offset: sibling offset relative to the current node;
+            positive for right, negative for left, wrapping around the
+            child list if needed (default: next sibling from left to right)
         :returns: updated zipper
         """
-        if not self.has_sibling(index):
-            raise IndexError("sibling index out of range")
+        if self.is_root():
+            return self
 
-        return self.up().down(self.thread[-1].index + index)
+        bead = self.thread[-1]
+        index = bead.index + offset
+        index %= len(bead.origin.children) + 1
+
+        return self.up().down(index)
 
     def _preorder(self, flip: bool) -> Self:
         child = -1 if flip else 0
@@ -173,7 +180,7 @@ class Zipper:
         if not self.is_leaf():
             return self.down(child)
 
-        while not self.has_sibling(sibling):
+        while self.is_last_sibling(sibling):
             if self.is_root():
                 return self
 
@@ -191,7 +198,7 @@ class Zipper:
 
             return self
 
-        if not self.has_sibling(sibling):
+        if self.is_last_sibling(sibling):
             return self.up()
 
         self = self.sibling(sibling)

@@ -1,4 +1,5 @@
 from sowing.node import Node, Zipper
+import pytest
 
 
 def test_build():
@@ -116,43 +117,85 @@ def test_hash_collisions():
     assert len(seen) == repeats
 
 
-def test_zipper_navigate():
+def test_zip_unzip():
+    root = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("c"))
+    )
+
+    zipper = root.unzip()
+    assert zipper.node == root
+    assert zipper.is_root()
+    assert zipper.thread == ()
+    assert zipper.zip() == root
+
+
+def test_zipper_thread():
     left = Node("b").add(Node("d").add(Node("e")))
     right = Node("c")
     root = Node("a").add(left).add(right)
 
     zipper = root.unzip()
 
-    assert zipper.node == root
-    assert zipper.is_root()
-    assert zipper.thread == ()
-
     zipper.down(0)
     assert zipper == root.unzip()
 
     zipper = zipper.down(0)
     assert zipper.node == left
-    assert not zipper.is_root()
     assert zipper.thread == (Zipper.Bead(
         origin=Node("a").add(right),
         index=0,
     ),)
 
-    zipper = zipper.up()
-    assert zipper.node == root
+    assert root.unzip().down().down().zip() == root
+
+
+def test_zipper_up_down_sibling():
+    root = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("c"))
+        .add(Node("f").add(Node("g")).add(Node("h")))
+    )
+
+    zipper = root.unzip()
+
     assert zipper.is_root()
-    assert zipper.thread == ()
+    assert not zipper.down(0).is_root()
+    assert not zipper.is_leaf()
+    assert zipper.down().down().down().is_leaf()
+
+    assert zipper.down().up() == zipper
+    assert zipper.down().down().up().up() == zipper
+
+    with pytest.raises(IndexError) as error:
+        zipper.up()
+
+    assert "cannot go up" in str(error)
 
     assert zipper.down(0).sibling(0) == zipper.down(0)
     assert zipper.down(1).sibling(-1) == zipper.down(0)
     assert zipper.down(0).sibling(1) == zipper.down(1)
     assert zipper.down(1).sibling(0) == zipper.down(1)
-    assert zipper.down().up() == zipper
-    assert zipper.down().down().up().up() == zipper
     assert zipper.down(0).sibling(1).sibling(-1) == zipper.down(0)
+    assert zipper.down(0).sibling(-1).sibling(1) == zipper.down(0)
+    assert zipper.down(0).sibling() == zipper.down(1)
+    assert zipper.down(0).sibling().sibling() == zipper.down(2)
+    assert zipper.down(0).sibling().sibling().sibling() == zipper.down(0)
+    assert zipper.down(0).sibling(-1) == zipper.down(2)
+    assert zipper.down(0).sibling(-1).sibling(-1) == zipper.down(1)
+    assert zipper.down(0).sibling(-1).sibling(-1).sibling(-1) == zipper.down(0)
+    assert zipper.down(0).down(0).sibling() == zipper.down(0).down(0)
+    assert zipper.sibling() == zipper
 
-    assert root == root.unzip().zip()
-    assert root == root.unzip().down().down().zip()
+    assert zipper.is_last_sibling()
+    assert not zipper.down(0).is_last_sibling()
+    assert zipper.down(0).is_last_sibling(-1)
+    assert not zipper.down(0).sibling().is_last_sibling()
+    assert not zipper.down(0).sibling().is_last_sibling(-1)
+    assert zipper.down(0).sibling(2).is_last_sibling()
+    assert not zipper.down(0).sibling(2).is_last_sibling(-1)
 
 
 def test_zipper_edit():

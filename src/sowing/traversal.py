@@ -60,7 +60,7 @@ def _traverse_euler(node: Node, reverse: bool) -> Traversal:
         if not cursor.is_leaf():
             cursor = cursor.down(child)
         else:
-            while not cursor.has_sibling(sibling) and not cursor.is_root():
+            while cursor.is_last_sibling(sibling) and not cursor.is_root():
                 cursor = cursor.up()
                 next_cursor = yield cursor
                 cursor = _none_else(next_cursor, cursor)
