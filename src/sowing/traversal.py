@@ -1,5 +1,6 @@
-from typing import Callable, Generator, Iterator
+from typing import Callable, Generator, Hashable, Iterator
 from enum import Enum, auto
+from functools import wraps
 from inspect import signature
 from .node import Node, Zipper
 
@@ -106,8 +107,8 @@ def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
     """
     Transform positions on a tree along a given traversal.
 
-    :param func: callback that receives each zipper value along the tree and
-        gets the opportunity to replace parts of it
+    :param func: callback receiving zipper values along the traversal
+        and returning an updated zipper
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
@@ -121,19 +122,34 @@ def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
         return end.value
 
 
-def mapnodes(func: Callable[[Node], Node], traversal: Traversal) -> Node:
+def mapnodes(
+    func: Callable[[Node], Node] |
+          Callable[[Node, Hashable], tuple[Node, Hashable]],
+    traversal: Traversal,
+) -> Node:
     """
     Transform the nodes of a tree along a given traversal.
 
-    :param func: callback that receives each node of the tree and
-        gets the opportunity to replace it
+    :param func: callback receiving each node of the tree (and optionally data
+        of the edge above), and returning an updated node (and edge data)
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
-    return maptree(
-        lambda zipper: zipper.replace(node=func(zipper.node)),
-        traversal,
-    )
+    params = signature(func).parameters
+
+    @wraps(func)
+    def wrapper(zipper: Zipper):
+        node = zipper.node
+        data = zipper.data
+
+        if len(params) == 2:
+            node, data = func(node, data)
+        else:
+            node = func(node)
+
+        return zipper.replace(node=node, data=data)
+
+    return maptree(wrapper, traversal)
 
 
 def leaves(root: Node) -> Iterator[Node]:

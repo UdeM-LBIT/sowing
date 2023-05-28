@@ -58,6 +58,39 @@ def test_map_relabel():
     assert mapnodes(relabel, traverse(before, Order.Post)) == after
 
 
+def test_map_edges():
+    before = (
+        Node("a")
+        .add(data="z", node=Node("b").add(Node("c")))
+        .add(data="y", node=Node("d").add(data="x",
+            node=Node("e")
+            .add(data="w", node=Node("f"))
+            .add(data="v", node=Node("g"))
+            .add(data="u", node=Node("h").add(data="t", node=Node("i")))
+        ))
+    )
+    after = (
+        Node("aa")
+        .add(data="zzz", node=Node("bb").add(Node("cc")))
+        .add(data="yyy", node=Node("dd").add(data="xxx",
+            node=Node("ee")
+            .add(data="www", node=Node("ff"))
+            .add(data="vvv", node=Node("gg"))
+            .add(data="uuu", node=Node("hh").add(data="ttt", node=Node("ii")))
+        ))
+    )
+
+    # Double node names and triple edge names
+    def relabel(node, edge):
+        node = node.replace(data=node.data * 2)
+        edge = edge * 3 if edge is not None else None
+        return node, edge
+
+    assert mapnodes(relabel, traverse(before)) == after
+    assert mapnodes(relabel, traverse(before, Order.Pre)) == after
+    assert mapnodes(relabel, traverse(before, Order.Post)) == after
+
+
 def test_map_replace():
     before = (
         Node("a")
