@@ -2,7 +2,7 @@ from sowing.node import Node, Edge, Zipper
 import pytest
 
 
-def test_build():
+def test_add_node():
     left = Node("b").add(Node("d").add(Node("e")))
     right = Node("c")
     root = Node("a").add(left).add(right)
@@ -11,6 +11,19 @@ def test_build():
     assert root.edges == (Edge(left), Edge(right))
 
     root = Node("a").add(left, "b").add(right, "c")
+
+    assert root.edges == (Edge(left, "b"), Edge(right, "c"))
+
+
+def test_add_edge():
+    left = Node("b").add(Edge(Node("d").add(Edge(Node("e")))))
+    right = Node("c")
+    root = Node("a").add(Edge(left)).add(Edge(right))
+
+    assert root.data == "a"
+    assert root.edges == (Edge(left), Edge(right))
+
+    root = Node("a").add(Edge(left, "b")).add(Edge(right, "c"))
 
     assert root.edges == (Edge(left, "b"), Edge(right, "c"))
 
@@ -46,7 +59,7 @@ def test_eq():
     assert repeat1 == repeat2
 
 
-def test_modify():
+def test_pop_replace():
     root = Node("a")
     child1 = Node("b")
     child2 = Node("c")
@@ -87,6 +100,16 @@ def test_modify():
 
     root = root.pop(1).add(child2, index=1)
     assert root == Node("a").add(Node("b")).add(Node("c"))
+
+
+def test_extend():
+    root = Node("a").add(Node("b"), "x").add(Node("c"), "y")
+    copy = Node("a").extend(root.edges)
+
+    assert root == copy
+
+    root = Node(-1).extend(map(Node, range(4)))
+    assert root == Node(-1).add(Node(0)).add(Node(1)).add(Node(2)).add(Node(3))
 
 
 def test_hashable():

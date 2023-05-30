@@ -1,4 +1,4 @@
-from typing import Hashable, Self
+from typing import Hashable, Iterable, Self, overload
 from dataclasses import dataclass, replace, field
 from enum import Enum, auto
 from .util import repr_default
@@ -35,23 +35,74 @@ class Node:
     def replace(self, **kwargs) -> Self:
         return replace(self, **kwargs)
 
+    @overload
     def add(self, node: Self, data: Hashable = None, index: int = -1) -> Self:
+        """
+        Add a new child to this node.
+
+        :param node: new child node
+        :param data: optional data to be attached to the linking edge
+        :param index: index before which to insert the new child
+            (default: insert at the end)
+        :returns: updated node
+        """
+        ...
+
+    @overload
+    def add(self, edge: Edge, index: int = -1) -> Self:
         """
         Add an outgoing edge to this node.
 
-        :param node: edge target node
-        :param data: optional data attached to the edge
+        :param edge: new edge to be added
         :param index: index before which to insert the new edge
             (default: insert at the end)
         :returns: updated node
         """
+        ...
+
+    def add(
+        self,
+        node: Self | Edge,
+        data: Hashable = None,
+        index: int = -1,
+    ) -> Self:
+        if isinstance(node, self.__class__):
+            edge = Edge(node=node, data=data)
+        else:
+            edge = node
+
         if index == -1:
             index = len(self.edges)
 
         before = self.edges[:index]
         after = self.edges[index:]
-        edge = Edge(node=node, data=data)
         return self.replace(edges=before + (edge,) + after)
+
+    @overload
+    def extend(self, nodes: Iterable[Self]) -> Self:
+        """
+        Append child nodes from an iterable.
+
+        :param nodes: iterable of nodes
+        :returns: updated node
+        """
+        ...
+
+    @overload
+    def extend(self, edges: Iterable[Edge]) -> Self:
+        """
+        Append edges from an iterable.
+
+        :param edges: iterable of edges
+        :returns: updated node
+        """
+        ...
+
+    def extend(self, nodes: Iterable[Self] | Iterable[Edge]) -> Self:
+        for node in nodes:
+            self = self.add(node)
+
+        return self
 
     def pop(self, index: int = -1) -> Self:
         """
