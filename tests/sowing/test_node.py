@@ -114,6 +114,9 @@ def test_extend():
 def test_hashable():
     assert hash(Node(42)) != hash(Node(1337))
     assert hash(Node(1337)) == hash(Node(1337))
+    assert hash(Node(42)) != hash(Node(42).add(Node(42)))
+    assert hash(Node(42)) == hash(Node(1337).replace(data=42))
+    assert hash(Node(42)) == hash(Node(42).add(Node(21)).replace(edges=()))
 
     seen = set()
     seen.add(Node("a").add(Node("b")).add(Node("c")))

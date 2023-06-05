@@ -14,6 +14,9 @@ class Edge:
     # Arbitrary data attached to this edge
     data: Hashable = None
 
+    def replace(self, **kwargs) -> Self:
+        return replace(self, **kwargs)
+
 
 @repr_default
 @dataclass(frozen=True, slots=True)
