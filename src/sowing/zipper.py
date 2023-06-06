@@ -15,6 +15,9 @@ class Zipper:
     # Child index into the parent node
     index: int = -1
 
+    # Current depth level
+    depth: int = 0
+
     # Parent pointer, or None if at root
     parent: Self | None = None
 
@@ -47,6 +50,7 @@ class Zipper:
             data=edges[index].data,
             parent=self.replace(node=self.node.pop(index)),
             index=index,
+            depth=self.depth + 1,
         )
 
     def is_root(self) -> bool:

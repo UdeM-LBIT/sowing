@@ -212,11 +212,7 @@ def test_map_depth():
 
     # Replace node values by their depth
     def depth(cursor):
-        if cursor.is_root():
-            value = 0
-        else:
-            value = cursor.parent.node.data + 1
-        return cursor.replace(node=cursor.node.replace(data=value))
+        return cursor.replace(node=cursor.node.replace(data=cursor.depth))
 
     assert maptree(depth, traverse(before, Order.Pre)) == after
 

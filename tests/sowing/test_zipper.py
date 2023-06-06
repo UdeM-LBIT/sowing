@@ -69,12 +69,19 @@ def test_zipper_up_down_sibling():
     zipper = root.unzip()
 
     assert zipper.is_root()
+    assert zipper.depth == 0
     assert not zipper.down(0).is_root()
+    assert zipper.down(0).depth == 1
     assert not zipper.is_leaf()
     assert zipper.down().down().down().is_leaf()
+    assert zipper.down().down().depth == 2
+    assert zipper.down().down().down().depth == 3
 
     assert zipper.down().up() == zipper
+    assert zipper.down().up().depth == 0
+    assert zipper.down().down().up().depth == 1
     assert zipper.down().down().up().up() == zipper
+    assert zipper.down().down().up().up().depth == 0
 
     with pytest.raises(IndexError) as error:
         zipper.up()
@@ -95,6 +102,7 @@ def test_zipper_up_down_sibling():
     assert zipper.down(0).sibling(-1).sibling(-1).sibling(-1) == zipper.down(0)
     assert zipper.down(0).down(0).sibling() == zipper.down(0).down(0)
     assert zipper.sibling() == zipper
+    assert zipper.down().sibling().depth == 1
 
     assert zipper.is_last_sibling()
     assert not zipper.down(0).is_last_sibling()
