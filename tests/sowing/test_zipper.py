@@ -1,4 +1,5 @@
 from sowing.node import Node
+from sowing.zipper import Zipper
 import pytest
 
 
@@ -12,9 +13,33 @@ def test_zip_unzip():
     zipper = root.unzip()
     assert zipper.node == root
     assert zipper.is_root()
+    assert not zipper.is_empty()
+    assert not zipper.is_leaf()
+    assert zipper.is_last_sibling()
+    assert zipper.is_last_sibling(-1)
     assert zipper.parent is None
     assert zipper.index == -1
     assert zipper.zip() == root
+
+
+def test_empty():
+    zipper = Zipper()
+    assert zipper.is_root()
+    assert zipper.is_empty()
+
+    zipper = Node("a").add(Node("b")).unzip().down().replace(node=None)
+    assert not zipper.is_root()
+    assert zipper.is_empty()
+    assert zipper.is_last_sibling()
+    assert zipper.is_last_sibling(-1)
+
+    root = Node("a").add(Node("b")).add(Node("c")).add(Node("d"))
+    zipper = root.unzip().down(1).replace(node=None)
+    assert not zipper.is_root()
+    assert zipper.is_empty()
+    assert not zipper.is_last_sibling()
+    assert not zipper.is_last_sibling(-1)
+    assert zipper.zip() == Node("a").add(Node("b")).add(Node("d"))
 
 
 def test_zipper_thread():

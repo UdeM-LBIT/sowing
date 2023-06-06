@@ -1,4 +1,4 @@
-from typing import Hashable, Self
+from typing import Hashable, Self, Optional
 from dataclasses import dataclass, replace
 from .util.dataclasses import repr_default
 
@@ -7,7 +7,7 @@ from .util.dataclasses import repr_default
 @dataclass(frozen=True, slots=True)
 class Zipper:
     # Currently pointed node
-    node: "Node"
+    node: Optional["Node"] = None
 
     # Data attached to the incoming edge
     data: Hashable | None = None
@@ -21,9 +21,13 @@ class Zipper:
     def replace(self, **kwargs) -> Self:
         return replace(self, **kwargs)
 
+    def is_empty(self) -> bool:
+        """Test whether there is a pointed node."""
+        return self.node is None
+
     def is_leaf(self) -> bool:
         """Test whether the pointed node is a leaf node."""
-        return self.node.edges == ()
+        return not self.is_empty() and self.node.edges == ()
 
     def down(self, index: int = 0) -> Self:
         """
@@ -33,11 +37,10 @@ class Zipper:
             negative indices are supported (default: first child)
         :returns: updated zipper
         """
-        edges = self.node.edges
-
-        if index >= len(edges):
+        if self.is_empty() or index >= len(self.node.edges):
             raise IndexError("child index out of range")
 
+        edges = self.node.edges
         index %= len(edges)
         return Zipper(
             node=edges[index].node,
@@ -54,6 +57,9 @@ class Zipper:
         """Move to the parent of the pointed node."""
         if self.is_root():
             raise IndexError("cannot go up")
+
+        if self.is_empty():
+            return self.parent
 
         return self.parent.replace(
             node=self.parent.node.add(self.node, self.data, self.index),
@@ -82,12 +88,18 @@ class Zipper:
         Move to a sibling of the pointed node.
 
         :param offset: sibling offset relative to the current node;
-            positive for right, negative for left, wrapping around the
-            child list if needed (default: next sibling from left to right)
+            zero for self, positive for right, negative for left, wrapping
+            around the child list if needed (default: sibling to the right)
         :returns: updated zipper
         """
         if self.is_root():
             return self
+
+        if self.is_empty():
+            if offset == 0:
+                raise IndexError("cannot go to self for empty node")
+            elif offset > 0:
+                offset -= 1
 
         index = self.index + offset
         index %= len(self.parent.node.edges) + 1

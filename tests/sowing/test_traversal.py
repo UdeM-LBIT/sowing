@@ -108,16 +108,46 @@ def test_map_replace():
         .add(Node("e").add(Node("f")).add(Node("g")).add(Node("i")))
     )
 
-    # Remove all unary nodes (preorder or postorder)
-    def remove_unary(node):
+    # Replace all unary nodes with their child (preorder or postorder)
+    def contract_unary(node):
         if len(node.edges) == 1:
             return node.edges[0].node
 
         return node
 
-    assert mapnodes(remove_unary, traverse(before)) == after
-    assert mapnodes(remove_unary, traverse(before, Order.Pre)) == after
-    assert mapnodes(remove_unary, traverse(before, Order.Post)) == after
+    assert mapnodes(contract_unary, traverse(before)) == after
+    assert mapnodes(contract_unary, traverse(before, Order.Pre)) == after
+    assert mapnodes(contract_unary, traverse(before, Order.Post)) == after
+
+
+def test_map_remove():
+    before = (
+        Node("a")
+        .add(
+            Node("b")
+            .add(Node("c"))
+            .add(Node("d").add(Node("e")).add(Node("f")))
+            .add(Node("g"))
+        )
+        .add(Node("h").add(Node("i")).add(Node("j")))
+    )
+    after = (
+        Node("a")
+        .add(Node("e"))
+        .add(Node("h").add(Node("i")).add(Node("j")))
+    )
+
+    # Remove unary nodes and leaves “c”, “f” and “g”
+    def contract_remove(node):
+        if len(node.edges) == 1:
+            return node.edges[0].node
+
+        if len(node.edges) == 0 and node.data in "cfg":
+            return None
+
+        return node
+
+    assert mapnodes(contract_remove, traverse(before, Order.Post)) == after
 
 
 def test_map_fold():
