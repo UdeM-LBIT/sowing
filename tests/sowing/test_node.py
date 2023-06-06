@@ -33,17 +33,11 @@ def test_repeat():
 
 
 def test_eq():
-    root1 = Node("a") \
-        .add(Node("b").add(Node("d").add(Node("e")))) \
-        .add(Node("c"))
+    root1 = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
 
-    root2 = Node("a") \
-        .add(Node("b").add(Node("d").add(Node("e")))) \
-        .add(Node("c"))
+    root2 = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
 
-    root3 = Node("a") \
-        .add(Node("c")) \
-        .add(Node("b").add(Node("d").add(Node("e"))))
+    root3 = Node("a").add(Node("c")).add(Node("b").add(Node("d").add(Node("e"))))
 
     assert root1 == root2
     assert root1 != root3

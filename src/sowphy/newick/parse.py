@@ -8,6 +8,7 @@ from ..clade import Clade, Branch
 
 class ParseError(Exception):
     """Parsing error with location information."""
+
     def __init__(self, message, start, end):
         if abs(start - end) <= 1:
             message = f"{message} (at position {start})"
@@ -218,15 +219,15 @@ def parse_chain(data: str) -> tuple[Node, int]:
                             raise ParseError(
                                 "expected branch length value after ':', "
                                 f"not '{token.kind.value}'",
-                                token.start, token.end,
+                                token.start,
+                                token.end,
                             )
 
                         try:
                             branch = Branch(length=float(token.value))
                         except ValueError:
                             raise ParseError(
-                                "invalid branch length value",
-                                token.start, token.end
+                                "invalid branch length value", token.start, token.end
                             )
 
                     case _:
@@ -261,9 +262,9 @@ def parse_chain(data: str) -> tuple[Node, int]:
 
                         case _:
                             raise ParseError(
-                                f"unexpected token '{token.kind.value}' "
-                                "after node",
-                                token.start, token.end,
+                                f"unexpected token '{token.kind.value}' " "after node",
+                                token.start,
+                                token.end,
                             )
 
     token = next(tokens)
@@ -271,7 +272,8 @@ def parse_chain(data: str) -> tuple[Node, int]:
     if token.kind != TokenKind.Semicolon:
         raise ParseError(
             f"expected ';' after end of tree, not '{token.kind.value}'",
-            token.start, token.end,
+            token.start,
+            token.end,
         )
 
     return nodes.pop(), token.end
@@ -282,10 +284,7 @@ def parse(data: str) -> Node:
     node, pos = parse_chain(data)
 
     if data[pos:].strip(WHITESPACE):
-        raise ParseError(
-            "unexpected garbage after end of tree",
-            pos, len(data)
-        )
+        raise ParseError("unexpected garbage after end of tree", pos, len(data))
 
     return node
 

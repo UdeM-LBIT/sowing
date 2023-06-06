@@ -4,11 +4,7 @@ import pytest
 
 
 def test_zip_unzip():
-    root = (
-        Node("a")
-        .add(Node("b").add(Node("d").add(Node("e"))))
-        .add(Node("c"))
-    )
+    root = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
 
     zipper = root.unzip()
     assert zipper.node == root
@@ -141,12 +137,11 @@ def test_zipper_next_prev():
     root = (
         Node("a")
         .add(Node("b").add(Node("c")))
-        .add(Node("d").add(
-            Node("e")
-            .add(Node("f"))
-            .add(Node("g"))
-            .add(Node("h").add(Node("i")))
-        ))
+        .add(
+            Node("d").add(
+                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
+            )
+        )
     )
     zipper = root.unzip()
     assert zipper.node == root

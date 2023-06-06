@@ -10,12 +10,8 @@ def test_topology():
     assert newick.parse(";") == empty
     assert newick.parse("(,);") == empty.add(*empty_branch).add(*empty_branch)
     assert newick.parse("((),(,,),);") == (
-        empty
-        .add(empty.add(*empty_branch), Branch())
-        .add(
-            empty.add(*empty_branch).add(*empty_branch).add(*empty_branch),
-            Branch()
-        )
+        empty.add(empty.add(*empty_branch), Branch())
+        .add(empty.add(*empty_branch).add(*empty_branch).add(*empty_branch), Branch())
         .add(*empty_branch)
     )
 
@@ -119,21 +115,22 @@ def test_phylip():
     # Newick example trees, taken from Phylip
     # <https://evolution.genetics.washington.edu/phylip/newicktree.html>
 
-    assert newick.parse(
-        "(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);"
-    ) == (
+    assert newick.parse("(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);") == (
         Node(Clade(""))
         .add(Node(Clade("B")), Branch(6))
-        .add(data=Branch(5), node=Node(Clade(""))
-             .add(Node(Clade("A")), Branch(5))
-             .add(Node(Clade("C")), Branch(3))
-             .add(Node(Clade("E")), Branch(4))
+        .add(
+            data=Branch(5),
+            node=Node(Clade(""))
+            .add(Node(Clade("A")), Branch(5))
+            .add(Node(Clade("C")), Branch(3))
+            .add(Node(Clade("E")), Branch(4)),
         )
         .add(Node(Clade("D")), Branch(11))
     )
 
-    assert newick.parse(
-        """(
+    assert (
+        newick.parse(
+            """(
             (raccoon:19.19959,bear:6.80041):0.84600,
             (
                 (sea_lion:11.99700, seal:12.00300):7.52973,
@@ -144,24 +141,36 @@ def test_phylip():
             ):3.87382,
             dog:25.46154
         );"""
-    ) == (
-        Node(Clade(""))
-        .add(data=Branch(0.84600), node=Node(Clade(""))
-            .add(Node(Clade("raccoon")), Branch(19.19959))
-            .add(Node(Clade("bear")), Branch(6.80041)),
         )
-        .add(data=Branch(3.87382), node=Node(Clade(""))
-             .add(data=Branch(7.52973), node=Node(Clade(""))
-                  .add(Node(Clade("sea lion")), Branch(11.99700))
-                  .add(Node(Clade("seal")), Branch(12.00300))
-             )
-             .add(data=Branch(2.09460), node=Node(Clade(""))
-                  .add(data=Branch(20.59201), node=Node(Clade(""))
-                       .add(Node(Clade("monkey")), Branch(100.85930))
-                       .add(Node(Clade("cat")), Branch(47.14069))
-                  )
-                  .add(Node(Clade("weasel")), Branch(18.87953)),
-             ),
+        == (
+            Node(Clade(""))
+            .add(
+                data=Branch(0.84600),
+                node=Node(Clade(""))
+                .add(Node(Clade("raccoon")), Branch(19.19959))
+                .add(Node(Clade("bear")), Branch(6.80041)),
+            )
+            .add(
+                data=Branch(3.87382),
+                node=Node(Clade(""))
+                .add(
+                    data=Branch(7.52973),
+                    node=Node(Clade(""))
+                    .add(Node(Clade("sea lion")), Branch(11.99700))
+                    .add(Node(Clade("seal")), Branch(12.00300)),
+                )
+                .add(
+                    data=Branch(2.09460),
+                    node=Node(Clade(""))
+                    .add(
+                        data=Branch(20.59201),
+                        node=Node(Clade(""))
+                        .add(Node(Clade("monkey")), Branch(100.85930))
+                        .add(Node(Clade("cat")), Branch(47.14069)),
+                    )
+                    .add(Node(Clade("weasel")), Branch(18.87953)),
+                ),
+            )
+            .add(Node(Clade("dog")), Branch(25.46154))
         )
-        .add(Node(Clade("dog")), Branch(25.46154))
     )

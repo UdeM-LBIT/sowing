@@ -28,10 +28,12 @@ Traversal = Generator[Zipper, Zipper, Node]
 def _traverse_pre_post(node: Node, preorder: bool, reverse: bool) -> Traversal:
     cursor = node.unzip()
 
-    if reverse: advance = lambda: cursor.prev(preorder=preorder)
-    else: advance = lambda: cursor.next(preorder=preorder)
+    if reverse:
+        advance = lambda: cursor.prev(preorder=preorder)
+    else:
+        advance = lambda: cursor.next(preorder=preorder)
 
-    root_start = (not preorder == reverse)
+    root_start = not preorder == reverse
 
     if not root_start:
         cursor = advance()
@@ -123,8 +125,7 @@ def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
 
 
 def mapnodes(
-    func: Callable[[Node], Node] |
-          Callable[[Node, Hashable], tuple[Node, Hashable]],
+    func: Callable[[Node], Node] | Callable[[Node, Hashable], tuple[Node, Hashable]],
     traversal: Traversal,
 ) -> Node:
     """

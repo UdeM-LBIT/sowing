@@ -120,7 +120,7 @@ class Node:
             index = len(self.edges) - 1
 
         before = self.edges[:index]
-        after = self.edges[index + 1:]
+        after = self.edges[index + 1 :]
         return self.replace(edges=before + after)
 
     def unzip(self) -> "Zipper":

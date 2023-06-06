@@ -147,8 +147,10 @@ class Zipper:
         :param preorder: pass True to move in preorder (default is postorder)
         :returns: updated zipper
         """
-        if preorder: return self._preorder(flip=False)
-        else: return self._postorder(flip=False)
+        if preorder:
+            return self._preorder(flip=False)
+        else:
+            return self._postorder(flip=False)
 
     def prev(self, preorder: bool = False) -> Self:
         """
@@ -157,8 +159,10 @@ class Zipper:
         :param preorder: pass True to move in preorder (default is postorder)
         :returns: updated zipper
         """
-        if preorder: return self._postorder(flip=True)
-        else: return self._preorder(flip=True)
+        if preorder:
+            return self._postorder(flip=True)
+        else:
+            return self._preorder(flip=True)
 
     def zip(self) -> "Node":
         """Zip up to the root and return it."""

@@ -6,10 +6,7 @@ from typing import Iterable
 
 
 def is_binary(root: Node) -> bool:
-    return all(
-        len(cursor.node.edges) in (0, 2)
-        for cursor in traverse(root)
-    )
+    return all(len(cursor.node.edges) in (0, 2) for cursor in traverse(root))
 
 
 def binarize_at(root: Node) -> Iterable[Node]:
@@ -34,10 +31,7 @@ def binarize_at(root: Node) -> Iterable[Node]:
 
     # Distribute children multiplicities between left and right subtrees
     for right_muls in product(*(range(count + 1) for count in edges.values())):
-        left_muls = tuple(
-            value - mul
-            for mul, value in zip(right_muls, edges.values())
-        )
+        left_muls = tuple(value - mul for mul, value in zip(right_muls, edges.values()))
 
         # Distribute lexicographically left to right
         if sum(right_muls) == 0 or left_muls < right_muls:
@@ -60,9 +54,9 @@ def binarize_at(root: Node) -> Iterable[Node]:
 
         for left, right in options:
             yield (
-                head
-                .add(left if len(left.edges) > 1 else left.edges[0])
-                .add(right if len(right.edges) > 1 else right.edges[0])
+                head.add(left if len(left.edges) > 1 else left.edges[0]).add(
+                    right if len(right.edges) > 1 else right.edges[0]
+                )
             )
 
 
@@ -86,7 +80,8 @@ def binarize(root: Node) -> Iterable[Node]:
     edge_data = [edge.data for edge in root.edges]
 
     for bin_children in product(*map(binarize, children)):
-        yield from binarize_at(head.extend((
-            Edge(node, data)
-            for node, data in zip(bin_children, edge_data)
-        )))
+        yield from binarize_at(
+            head.extend(
+                (Edge(node, data) for node, data in zip(bin_children, edge_data))
+            )
+        )

@@ -44,8 +44,7 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
         children = tuple(edge.node for edge in cursor.node.edges)
 
         if cursor.is_leaf() or not all(
-            cursor.down(i).is_leaf()
-            for i in range(len(children))
+            cursor.down(i).is_leaf() for i in range(len(children))
         ):
             return cursor
 

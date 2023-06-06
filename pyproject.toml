@@ -37,3 +37,12 @@ dependencies = [
 
 [tool.hatch.envs.test.scripts]
 run = "pytest --exitfirst"
+
+[tool.hatch.envs.format]
+dependencies = [
+    "black",
+]
+
+[tool.hatch.envs.format.scripts]
+fix = "black src tests"
+check = "black --check src tests"

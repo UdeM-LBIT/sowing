@@ -129,7 +129,7 @@ def test_binarize_at_multree():
         [
             N().add(N().add(a).add(a)).add(b),
             N().add(N().add(a).add(b)).add(a),
-        ]
+        ],
     )
 
     assert_iter_eq(
@@ -137,7 +137,7 @@ def test_binarize_at_multree():
         [
             N().add(N().add(a).add(b)).add(b),
             N().add(a).add(N().add(b).add(b)),
-        ]
+        ],
     )
 
     assert_iter_eq(
@@ -149,7 +149,7 @@ def test_binarize_at_multree():
             N().add(N().add(N().add(a).add(b)).add(b)).add(a),
             N().add(N().add(a).add(N().add(b).add(b))).add(a),
             N().add(N().add(a).add(b)).add(N().add(a).add(b)),
-        ]
+        ],
     )
 
     # Number of rooted binary MUL-trees with n leaves and 3 labels
