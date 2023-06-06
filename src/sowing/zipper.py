@@ -7,7 +7,7 @@ from .util.dataclasses import repr_default
 @dataclass(frozen=True, slots=True)
 class Zipper:
     # Currently pointed node
-    node: Optional["Node"] = None
+    node: Optional["Node"] = None  # noqa
 
     # Data attached to the incoming edge
     data: Hashable | None = None
@@ -168,7 +168,7 @@ class Zipper:
         else:
             return self._preorder(flip=True)
 
-    def zip(self) -> "Node":
+    def zip(self) -> "Node":  # noqa
         """Zip up to the root and return it."""
         bubble = self
 

@@ -29,9 +29,14 @@ def _traverse_pre_post(node: Node, preorder: bool, reverse: bool) -> Traversal:
     cursor = node.unzip()
 
     if reverse:
-        advance = lambda: cursor.prev(preorder=preorder)
+
+        def advance():
+            return cursor.prev(preorder=preorder)
+
     else:
-        advance = lambda: cursor.next(preorder=preorder)
+
+        def advance():
+            return cursor.next(preorder=preorder)
 
     root_start = not preorder == reverse
 
@@ -115,7 +120,6 @@ def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
     :returns: transformed tree
     """
     cursor = next(traversal)
-    needs_thread = len(signature(func).parameters) == 2
 
     try:
         while True:

@@ -30,19 +30,19 @@ packages = [
     "src/sowphy",
 ]
 
-[tool.hatch.envs.test]
+[tool.hatch.envs.dev]
 dependencies = [
     "pytest",
-]
-
-[tool.hatch.envs.test.scripts]
-run = "pytest --exitfirst"
-
-[tool.hatch.envs.format]
-dependencies = [
     "black",
+    "ruff",
 ]
 
-[tool.hatch.envs.format.scripts]
-fix = "black src tests"
-check = "black --check src tests"
+[tool.hatch.envs.dev.scripts]
+test = "pytest --exitfirst"
+test-verbose = "pytest --exitfirst -vv"
+format = "black ."
+format-check = "black --check ."
+lint = "ruff check ."
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]

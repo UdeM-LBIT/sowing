@@ -1,4 +1,4 @@
-from sowing.node import Node, Zipper
+from sowing.node import Node
 from sowing.traversal import Order, traverse, mapnodes
 from ..clade import Clade, Branch
 

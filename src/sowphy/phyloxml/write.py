@@ -4,7 +4,10 @@ from xml.etree import ElementTree as ET
 
 
 NAMESPACE = "http://www.phyloxml.org"
-phylo = lambda tag: f"{{{NAMESPACE}}}{tag}"
+
+
+def phylo(tag):
+    return f"{{{NAMESPACE}}}{tag}"
 
 
 def map_edge(edge):

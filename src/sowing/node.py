@@ -1,6 +1,5 @@
 from typing import Hashable, Iterable, Self, overload
 from dataclasses import dataclass, replace, field
-from enum import Enum, auto
 from .util.dataclasses import repr_default
 from .zipper import Zipper
 

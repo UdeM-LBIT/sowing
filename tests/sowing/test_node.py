@@ -1,4 +1,4 @@
-from sowing.node import Node, Edge, Zipper
+from sowing.node import Node, Edge
 
 
 def test_add_node():

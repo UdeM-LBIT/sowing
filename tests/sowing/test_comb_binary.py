@@ -1,7 +1,7 @@
-from sowing.node import Node as N, Edge
+from sowing.node import Node as N
 from sowing import traversal
 from sowing.comb.binary import is_binary, binarize_at, binarize
-from math import factorial, prod
+from math import prod
 from itertools import product
 
 

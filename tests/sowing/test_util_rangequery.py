@@ -1,6 +1,5 @@
 from random import Random
 import time
-import unittest
 from sowing.util.rangequery import RangeQuery
 
 
