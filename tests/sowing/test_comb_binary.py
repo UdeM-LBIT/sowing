@@ -1,6 +1,6 @@
 from sowing.node import Node as N, Edge
 from sowing import traversal
-from sowing.comb.binarize import binarize_at, binarize
+from sowing.comb.binary import binarize_at, binarize
 from math import factorial, prod
 from itertools import product
 
