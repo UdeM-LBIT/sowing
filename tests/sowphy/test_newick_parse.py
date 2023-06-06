@@ -1,6 +1,7 @@
 from sowing.node import Node
 from sowphy import newick
 from sowphy.clade import Clade, Branch
+from immutables import Map
 import pytest
 
 
@@ -51,6 +52,80 @@ def test_comments():
     assert newick.parse("root[abc[nested[third]]];") == Node(Clade("root"))
 
 
+def test_props_nhx():
+    assert newick.parse("a[&&NHX];") == (Node(Clade("a", Map({}))))
+    assert newick.parse("a[&&NHX:S=human:E=1.1.1.1];") == (
+        Node(Clade("a", Map({"S": "human", "E": "1.1.1.1"})))
+    )
+    assert newick.parse("a[&&NHX:S={}:E=()];") == (
+        Node(Clade("a", Map({"S": "{}", "E": "()"})))
+    )
+    assert newick.parse("a[&&NHX:S=[abc]:E=];") == (
+        Node(Clade("a", Map({"S": "", "E": ""})))
+    )
+    assert newick.parse("(a[&&NHX:S=:E=]:12);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a", Map({"S": "", "E": ""}))),
+            data=Branch(12),
+        )
+    )
+    assert newick.parse("(a:12[&&NHX:S=:E=]);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a")),
+            data=Branch(12, Map({"S": "", "E": ""})),
+        )
+    )
+    assert newick.parse("(a:[&&NHX:S=:E=]);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a")),
+            data=Branch(props=Map({"S": "", "E": ""})),
+        )
+    )
+    assert newick.parse("a[&&NHX:'quote'':=arg'='quote=:''value'];") == (
+        Node(Clade("a", Map({"quote':=arg": "quote=:'value"})))
+    )
+
+
+def test_props_beast():
+    assert newick.parse("a[&];") == (Node(Clade("a", Map({}))))
+    assert newick.parse("a[&height=100.0,colour={red}];") == (
+        Node(Clade("a", Map({"height": "100.0", "colour": "{red}"})))
+    )
+    assert newick.parse("a[&height=100.0,colour={red},];") == (
+        Node(Clade("a", Map({"height": "100.0", "colour": "{red}"})))
+    )
+    assert newick.parse("a[&height=[],colour=];") == (
+        Node(Clade("a", Map({"height": "", "colour": ""})))
+    )
+    assert newick.parse("a[&height=[],colour=,];") == (
+        Node(Clade("a", Map({"height": "", "colour": ""})))
+    )
+    assert newick.parse("a[&height={},colour=(),test=[]];") == (
+        Node(Clade("a", Map({"height": "{}", "colour": "()", "test": ""})))
+    )
+    assert newick.parse("(a[&s=,e=]:12);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a", Map({"s": "", "e": ""}))),
+            data=Branch(12),
+        )
+    )
+    assert newick.parse("(a:12[&s=,e=]);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a")),
+            data=Branch(12, Map({"s": "", "e": ""})),
+        )
+    )
+    assert newick.parse("(a:[&s=,e=]);") == (
+        Node(Clade()).add(
+            node=Node(Clade("a")),
+            data=Branch(props=Map({"s": "", "e": ""})),
+        )
+    )
+    assert newick.parse("a[&'quote'':=arg'='quote=:''value',];") == (
+        Node(Clade("a", Map({"quote':=arg": "quote=:'value"})))
+    )
+
+
 def test_tokenize_error():
     with pytest.raises(newick.ParseError) as error:
         newick.parse("()'unclosed;")
@@ -65,6 +140,13 @@ def test_tokenize_error():
     assert "unclosed comment" in str(error.value)
     assert error.value.start == 2
     assert error.value.end == 6
+
+    with pytest.raises(newick.ParseError) as error:
+        newick.parse("()][];")
+
+    assert "unexpected ']'" in str(error.value)
+    assert error.value.start == 2
+    assert error.value.end == 3
 
 
 def test_grammar_error():
@@ -90,16 +172,9 @@ def test_grammar_error():
     assert error.value.end == 7
 
     with pytest.raises(newick.ParseError) as error:
-        newick.parse(":;")
-
-    assert "expected branch length value after ':', not ';'" in str(error.value)
-    assert error.value.start == 1
-    assert error.value.end == 2
-
-    with pytest.raises(newick.ParseError) as error:
         newick.parse(":abcd;")
 
-    assert "invalid branch length value" in str(error.value)
+    assert "invalid branch length value 'abcd'" in str(error.value)
     assert error.value.start == 1
     assert error.value.end == 5
 
@@ -109,6 +184,27 @@ def test_grammar_error():
     assert "unexpected token '(' after node" in str(error.value)
     assert error.value.start == 5
     assert error.value.end == 6
+
+    with pytest.raises(newick.ParseError) as error:
+        newick.parse("(node[&&NHX:=value]")
+
+    assert "expected 'string', not '='" in str(error.value)
+    assert error.value.start == 12
+    assert error.value.end == 13
+
+    with pytest.raises(newick.ParseError) as error:
+        newick.parse("(node[&test,=]")
+
+    assert "expected '=', not ','" in str(error.value)
+    assert error.value.start == 11
+    assert error.value.end == 12
+
+    with pytest.raises(newick.ParseError) as error:
+        newick.parse("(node[&test=,=]")
+
+    assert "expected ']', not '='" in str(error.value)
+    assert error.value.start == 13
+    assert error.value.end == 14
 
 
 def test_phylip():

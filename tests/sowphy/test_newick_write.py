@@ -1,6 +1,6 @@
 from sowing.node import Node
 from sowphy import newick
-from sowphy.clade import Clade, Branch
+from sowphy.clade import Clade, Branch, Map
 
 
 def test_topology():
@@ -49,6 +49,85 @@ def test_length():
             .add(Node(Clade("right")), Branch(3.21))
         )
         == "(left:1.23,right:3.21)root;"
+    )
+
+
+def test_props_clade():
+    assert newick.write(Node(Clade("test", Map({})))) == "test;"
+    assert (
+        newick.write(
+            Node(
+                Clade(
+                    "test",
+                    Map(
+                        {
+                            "key": "value",
+                            "bool": True,
+                            "number": 42,
+                        }
+                    ),
+                )
+            )
+        )
+        == "test[&bool=True,key=value,number=42];"
+    )
+    assert (
+        newick.write(
+            Node(
+                Clade(
+                    "test",
+                    Map(
+                        {
+                            "key": "va=lue",
+                            "bo,ol": True,
+                            "number": 42,
+                        }
+                    ),
+                )
+            )
+        )
+        == "test[&'bo,ol'=True,key='va=lue',number=42];"
+    )
+
+
+def test_props_branch():
+    assert (
+        newick.write(
+            Node().add(
+                Node(
+                    Clade(
+                        "test",
+                        Map(
+                            {
+                                "key": "value",
+                                "bool": True,
+                                "number": 42,
+                            }
+                        ),
+                    )
+                ),
+                Branch(12),
+            )
+        )
+        == "(test[&bool=True,key=value,number=42]:12);"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Clade("test")),
+                Branch(
+                    12,
+                    Map(
+                        {
+                            "key": "value",
+                            "bool": True,
+                            "number": 42,
+                        }
+                    ),
+                ),
+            )
+        )
+        == "(test:12[&bool=True,key=value,number=42]);"
     )
 
 
