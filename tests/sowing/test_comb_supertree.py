@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.supertree import Triple, Fan, breakup, build, supertree
+from sowing.comb.supertree import Triple, Fan, breakup, build, supertree
 
 
 def test_breakup():

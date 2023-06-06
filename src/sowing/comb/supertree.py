@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from sowing import traversal
-from sowing.node import Node
-from .util.partition import Partition
+from .. import traversal
+from ..node import Node
+from ..util.partition import Partition
 
 
 @dataclass(frozen=True, slots=True)

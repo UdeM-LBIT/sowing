@@ -1,4 +1,4 @@
-from .node import Node, Edge
+from ..node import Node, Edge
 from itertools import product, combinations_with_replacement
 from collections import Counter
 from typing import Iterable
