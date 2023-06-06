@@ -1,7 +1,15 @@
 from ..node import Node, Edge
+from ..traversal import traverse
 from itertools import product, combinations_with_replacement
 from collections import Counter
 from typing import Iterable
+
+
+def is_binary(root: Node) -> bool:
+    return all(
+        len(cursor.node.edges) in (0, 2)
+        for cursor in traverse(root)
+    )
 
 
 def binarize_at(root: Node) -> Iterable[Node]:

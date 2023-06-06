@@ -1,11 +1,21 @@
 from sowing.node import Node as N, Edge
 from sowing import traversal
-from sowing.comb.binary import binarize_at, binarize
+from sowing.comb.binary import is_binary, binarize_at, binarize
 from math import factorial, prod
 from itertools import product
 
 
 a, b, c, d, e, f, g, h, p, r = map(N, "abcdefghpr")
+
+
+def test_is_binary():
+    assert is_binary(a)
+    assert not is_binary(a.add(b))
+    assert is_binary(a.add(b).add(c))
+    assert not is_binary(a.add(b).add(c).add(d))
+    assert not is_binary(a.add(b).add(c).add(c))
+    assert is_binary(a.add(a.add(a).add(a)).add(b.add(c).add(c)))
+    assert not is_binary(a.add(a.add(b).add(c)).add(b.add(c)))
 
 
 def assert_iter_eq(iterable1, iterable2):
