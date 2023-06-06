@@ -1,6 +1,6 @@
 from typing import Hashable, Self
 from dataclasses import dataclass, replace
-from .util import repr_default
+from .util.dataclasses import repr_default
 
 
 @repr_default

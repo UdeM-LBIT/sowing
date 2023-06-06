@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Hashable
 from immutables import Map
-from sowing.util import repr_default
+from sowing.util.dataclasses import repr_default
 
 
 Color = tuple[int, int, int, int]

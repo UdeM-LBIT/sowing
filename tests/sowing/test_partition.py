@@ -1,6 +1,6 @@
 from itertools import product
 from sowing.node import Node
-from sowphy.util.partition import Partition
+from sowing.util.partition import Partition
 
 
 def test_partition_int():
