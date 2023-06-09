@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sowing"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
     { name="Mattéo Delabre", email="git.matteo@delab.re" },
 ]
@@ -21,14 +21,12 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/matteodelabre/sowing"
-"Bug Tracker" = "https://github.com/matteodelabre/sowing/issues"
+"Homepage" = "https://github.com/UdeM-LBIT/sowing"
+"Bug Tracker" = "https://github.com/UdeM-LBIT/sowing/issues"
 
 [tool.hatch.build]
-packages = [
-    "src/sowing",
-    "src/sowphy",
-]
+sources = ["src"]
+only-include = ["src"]
 
 [tool.hatch.envs.dev]
 dependencies = [
