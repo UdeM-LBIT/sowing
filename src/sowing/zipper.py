@@ -65,6 +65,9 @@ class Zipper:
         if self.is_empty():
             return self.parent
 
+        if self.parent.node is None:
+            raise ValueError("cannot attach to empty parent zipper")
+
         return self.parent.replace(
             node=self.parent.node.add(self.node, self.data, self.index),
         )
@@ -76,7 +79,7 @@ class Zipper:
         :param direction: positive number to test in left to right order,
             negative number to test in right to left order
         """
-        if self.is_root():
+        if self.parent is None or self.parent.node is None:
             return True
 
         if direction == 0:
@@ -96,14 +99,11 @@ class Zipper:
             around the child list if needed (default: sibling to the right)
         :returns: updated zipper
         """
-        if self.is_root():
+        if self.parent is None or self.parent.node is None or offset == 0:
             return self
 
         if self.is_empty():
-            if offset == 0:
-                raise IndexError("cannot go to self for empty node")
-            elif offset > 0:
-                offset -= 1
+            offset -= 1
 
         index = self.index + offset
         index %= len(self.parent.node.edges) + 1
