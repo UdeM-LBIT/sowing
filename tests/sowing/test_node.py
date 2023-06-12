@@ -9,9 +9,11 @@ def test_add_node():
     assert root.data == "a"
     assert root.edges == (Edge(left), Edge(right))
 
-    root = Node("a").add(left, "b").add(right, "c")
-
+    root = Node("a").add(left, data="b").add(right, data="c")
     assert root.edges == (Edge(left, "b"), Edge(right, "c"))
+
+    root = Node("a").add(left, data="b").add(right, data="c", index=0)
+    assert root.edges == (Edge(right, "c"), Edge(left, "b"))
 
 
 def test_add_edge():
@@ -23,8 +25,10 @@ def test_add_edge():
     assert root.edges == (Edge(left), Edge(right))
 
     root = Node("a").add(Edge(left, "b")).add(Edge(right, "c"))
-
     assert root.edges == (Edge(left, "b"), Edge(right, "c"))
+
+    root = Node("a").add(Edge(left, "b")).add(Edge(right, "c"), index=0)
+    assert root.edges == (Edge(right, "c"), Edge(left, "b"))
 
 
 def test_repeat():
@@ -34,9 +38,7 @@ def test_repeat():
 
 def test_eq():
     root1 = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
-
     root2 = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
-
     root3 = Node("a").add(Node("c")).add(Node("b").add(Node("d").add(Node("e"))))
 
     assert root1 == root2
@@ -96,7 +98,7 @@ def test_pop_replace():
 
 
 def test_extend():
-    root = Node("a").add(Node("b"), "x").add(Node("c"), "y")
+    root = Node("a").add(Node("b"), data="x").add(Node("c"), data="y")
     copy = Node("a").extend(root.edges)
 
     assert root == copy

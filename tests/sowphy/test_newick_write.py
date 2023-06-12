@@ -25,8 +25,8 @@ def test_name():
     assert (
         newick.write(
             Node(Clade("root"))
-            .add(Node(Clade("left")), Branch())
-            .add(Node(Clade("right")), Branch())
+            .add(Node(Clade("left")), data=Branch())
+            .add(Node(Clade("right")), data=Branch())
         )
         == "(left,right)root;"
     )
@@ -37,16 +37,16 @@ def test_length():
     assert (
         newick.write(
             Node(Clade("root"))
-            .add(Node(Clade("left")), Branch(42))
-            .add(Node(Clade("right")), Branch(24))
+            .add(Node(Clade("left")), data=Branch(42))
+            .add(Node(Clade("right")), data=Branch(24))
         )
         == "(left:42,right:24)root;"
     )
     assert (
         newick.write(
             Node(Clade("root"))
-            .add(Node(Clade("left")), Branch(1.23))
-            .add(Node(Clade("right")), Branch(3.21))
+            .add(Node(Clade("left")), data=Branch(1.23))
+            .add(Node(Clade("right")), data=Branch(3.21))
         )
         == "(left:1.23,right:3.21)root;"
     )
@@ -106,7 +106,7 @@ def test_props_branch():
                         ),
                     )
                 ),
-                Branch(12),
+                data=Branch(12),
             )
         )
         == "(test[&bool=True,key=value,number=42]:12);"
@@ -115,7 +115,7 @@ def test_props_branch():
         newick.write(
             Node().add(
                 Node(Clade("test")),
-                Branch(
+                data=Branch(
                     12,
                     Map(
                         {
@@ -138,15 +138,15 @@ def test_phylip():
     assert (
         newick.write(
             Node(Clade(""))
-            .add(Node(Clade("B")), Branch(6))
+            .add(Node(Clade("B")), data=Branch(6))
             .add(
+                Node(Clade(""))
+                .add(Node(Clade("A")), data=Branch(5))
+                .add(Node(Clade("C")), data=Branch(3))
+                .add(Node(Clade("E")), data=Branch(4)),
                 data=Branch(5),
-                node=Node(Clade(""))
-                .add(Node(Clade("A")), Branch(5))
-                .add(Node(Clade("C")), Branch(3))
-                .add(Node(Clade("E")), Branch(4)),
             )
-            .add(Node(Clade("D")), Branch(11))
+            .add(Node(Clade("D")), data=Branch(11))
         )
         == "(B:6,(A:5,C:3,E:4):5,D:11);"
     )
@@ -154,33 +154,33 @@ def test_phylip():
     assert newick.write(
         Node(Clade(""))
         .add(
+            Node(Clade(""))
+            .add(Node(Clade("raccoon")), data=Branch(19.19959))
+            .add(Node(Clade("bear")), data=Branch(6.80041)),
             data=Branch(0.84600),
-            node=Node(Clade(""))
-            .add(Node(Clade("raccoon")), Branch(19.19959))
-            .add(Node(Clade("bear")), Branch(6.80041)),
         )
         .add(
-            data=Branch(3.87382),
-            node=Node(Clade(""))
+            Node(Clade(""))
             .add(
+                Node(Clade(""))
+                .add(Node(Clade("sea lion")), data=Branch(11.99700))
+                .add(Node(Clade("seal")), data=Branch(12.00300)),
                 data=Branch(7.52973),
-                node=Node(Clade(""))
-                .add(Node(Clade("sea lion")), Branch(11.99700))
-                .add(Node(Clade("seal")), Branch(12.00300)),
             )
             .add(
-                data=Branch(2.09460),
-                node=Node(Clade(""))
+                Node(Clade(""))
                 .add(
+                    Node(Clade(""))
+                    .add(Node(Clade("monkey")), data=Branch(100.85930))
+                    .add(Node(Clade("cat")), data=Branch(47.14069)),
                     data=Branch(20.59201),
-                    node=Node(Clade(""))
-                    .add(Node(Clade("monkey")), Branch(100.85930))
-                    .add(Node(Clade("cat")), Branch(47.14069)),
                 )
-                .add(Node(Clade("weasel")), Branch(18.87953)),
+                .add(Node(Clade("weasel")), data=Branch(18.87953)),
+                data=Branch(2.09460),
             ),
+            data=Branch(3.87382),
         )
-        .add(Node(Clade("dog")), Branch(25.46154))
+        .add(Node(Clade("dog")), data=Branch(25.46154))
     ) == (
         "((raccoon:19.19959,bear:6.80041):0.846,((sea_lion:11.997,seal:12.003)"
         ":7.52973,((monkey:100.8593,cat:47.14069):20.59201,weasel:18.87953)"

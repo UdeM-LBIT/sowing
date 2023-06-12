@@ -1,4 +1,4 @@
-from sowing.node import Node
+from sowing.node import Node, Edge
 from sowphy import newick
 from sowphy.clade import Clade, Branch
 from immutables import Map
@@ -7,13 +7,13 @@ import pytest
 
 def test_topology():
     empty = Node(Clade())
-    empty_branch = (empty, Branch())
+    empty_branch = Edge(empty, Branch())
     assert newick.parse(";") == empty
-    assert newick.parse("(,);") == empty.add(*empty_branch).add(*empty_branch)
+    assert newick.parse("(,);") == empty.add(empty_branch).add(empty_branch)
     assert newick.parse("((),(,,),);") == (
-        empty.add(empty.add(*empty_branch), Branch())
-        .add(empty.add(*empty_branch).add(*empty_branch).add(*empty_branch), Branch())
-        .add(*empty_branch)
+        empty.add(empty.add(empty_branch), data=Branch())
+        .add(empty.add(empty_branch).add(empty_branch).add(empty_branch), data=Branch())
+        .add(empty_branch)
     )
 
 
@@ -24,8 +24,8 @@ def test_name():
     assert newick.parse("'quote''quote';") == Node(Clade("quote'quote"))
     assert newick.parse("(left,right)root;") == (
         Node(Clade("root"))
-        .add(Node(Clade("left")), Branch())
-        .add(Node(Clade("right")), Branch())
+        .add(Node(Clade("left")), data=Branch())
+        .add(Node(Clade("right")), data=Branch())
     )
 
 
@@ -33,21 +33,21 @@ def test_length():
     assert newick.parse(":42;") == Node(Clade(""))
     assert newick.parse("(left:42,right:24)root;") == (
         Node(Clade("root"))
-        .add(Node(Clade("left")), Branch(42))
-        .add(Node(Clade("right")), Branch(24))
+        .add(Node(Clade("left")), data=Branch(42))
+        .add(Node(Clade("right")), data=Branch(24))
     )
     assert newick.parse("(left:1.23,right:3.21)root;") == (
         Node(Clade("root"))
-        .add(Node(Clade("left")), Branch(1.23))
-        .add(Node(Clade("right")), Branch(3.21))
+        .add(Node(Clade("left")), data=Branch(1.23))
+        .add(Node(Clade("right")), data=Branch(3.21))
     )
 
 
 def test_comments():
     assert newick.parse("(left[comment1],right[comment2])root[comment3];") == (
         Node(Clade("root"))
-        .add(Node(Clade("left")), Branch())
-        .add(Node(Clade("right")), Branch())
+        .add(Node(Clade("left")), data=Branch())
+        .add(Node(Clade("right")), data=Branch())
     )
     assert newick.parse("root[abc[nested[third]]];") == Node(Clade("root"))
 
@@ -65,19 +65,19 @@ def test_props_nhx():
     )
     assert newick.parse("(a[&&NHX:S=:E=]:12);") == (
         Node(Clade()).add(
-            node=Node(Clade("a", Map({"S": "", "E": ""}))),
+            Node(Clade("a", Map({"S": "", "E": ""}))),
             data=Branch(12),
         )
     )
     assert newick.parse("(a:12[&&NHX:S=:E=]);") == (
         Node(Clade()).add(
-            node=Node(Clade("a")),
+            Node(Clade("a")),
             data=Branch(12, Map({"S": "", "E": ""})),
         )
     )
     assert newick.parse("(a:[&&NHX:S=:E=]);") == (
         Node(Clade()).add(
-            node=Node(Clade("a")),
+            Node(Clade("a")),
             data=Branch(props=Map({"S": "", "E": ""})),
         )
     )
@@ -105,19 +105,19 @@ def test_props_beast():
     )
     assert newick.parse("(a[&s=,e=]:12);") == (
         Node(Clade()).add(
-            node=Node(Clade("a", Map({"s": "", "e": ""}))),
+            Node(Clade("a", Map({"s": "", "e": ""}))),
             data=Branch(12),
         )
     )
     assert newick.parse("(a:12[&s=,e=]);") == (
         Node(Clade()).add(
-            node=Node(Clade("a")),
+            Node(Clade("a")),
             data=Branch(12, Map({"s": "", "e": ""})),
         )
     )
     assert newick.parse("(a:[&s=,e=]);") == (
         Node(Clade()).add(
-            node=Node(Clade("a")),
+            Node(Clade("a")),
             data=Branch(props=Map({"s": "", "e": ""})),
         )
     )
@@ -213,15 +213,15 @@ def test_phylip():
 
     assert newick.parse("(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);") == (
         Node(Clade(""))
-        .add(Node(Clade("B")), Branch(6))
+        .add(Node(Clade("B")), data=Branch(6))
         .add(
+            Node(Clade(""))
+            .add(Node(Clade("A")), data=Branch(5))
+            .add(Node(Clade("C")), data=Branch(3))
+            .add(Node(Clade("E")), data=Branch(4)),
             data=Branch(5),
-            node=Node(Clade(""))
-            .add(Node(Clade("A")), Branch(5))
-            .add(Node(Clade("C")), Branch(3))
-            .add(Node(Clade("E")), Branch(4)),
         )
-        .add(Node(Clade("D")), Branch(11))
+        .add(Node(Clade("D")), data=Branch(11))
     )
 
     assert (
@@ -241,32 +241,32 @@ def test_phylip():
         == (
             Node(Clade(""))
             .add(
+                Node(Clade(""))
+                .add(Node(Clade("raccoon")), data=Branch(19.19959))
+                .add(Node(Clade("bear")), data=Branch(6.80041)),
                 data=Branch(0.84600),
-                node=Node(Clade(""))
-                .add(Node(Clade("raccoon")), Branch(19.19959))
-                .add(Node(Clade("bear")), Branch(6.80041)),
             )
             .add(
-                data=Branch(3.87382),
-                node=Node(Clade(""))
+                Node(Clade(""))
                 .add(
+                    Node(Clade(""))
+                    .add(Node(Clade("sea lion")), data=Branch(11.99700))
+                    .add(Node(Clade("seal")), data=Branch(12.00300)),
                     data=Branch(7.52973),
-                    node=Node(Clade(""))
-                    .add(Node(Clade("sea lion")), Branch(11.99700))
-                    .add(Node(Clade("seal")), Branch(12.00300)),
                 )
                 .add(
-                    data=Branch(2.09460),
-                    node=Node(Clade(""))
+                    Node(Clade(""))
                     .add(
+                        Node(Clade(""))
+                        .add(Node(Clade("monkey")), data=Branch(100.85930))
+                        .add(Node(Clade("cat")), data=Branch(47.14069)),
                         data=Branch(20.59201),
-                        node=Node(Clade(""))
-                        .add(Node(Clade("monkey")), Branch(100.85930))
-                        .add(Node(Clade("cat")), Branch(47.14069)),
                     )
-                    .add(Node(Clade("weasel")), Branch(18.87953)),
+                    .add(Node(Clade("weasel")), data=Branch(18.87953)),
+                    data=Branch(2.09460),
                 ),
+                data=Branch(3.87382),
             )
-            .add(Node(Clade("dog")), Branch(25.46154))
+            .add(Node(Clade("dog")), data=Branch(25.46154))
         )
     )

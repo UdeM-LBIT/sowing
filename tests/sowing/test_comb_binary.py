@@ -201,33 +201,33 @@ def test_binarize():
     )
 
     assert_iter_eq(
-        binarize(a.add(b, "x").add(c, "y").add(d, "z")),
+        binarize(a.add(b, data="x").add(c, data="y").add(d, data="z")),
         [
-            a.add(N().add(b, "x").add(c, "y")).add(d, "z"),
-            a.add(N().add(b, "x").add(d, "z")).add(c, "y"),
-            a.add(b, "x").add(N().add(c, "y").add(d, "z")),
+            a.add(N().add(b, data="x").add(c, data="y")).add(d, data="z"),
+            a.add(N().add(b, data="x").add(d, data="z")).add(c, data="y"),
+            a.add(b, data="x").add(N().add(c, data="y").add(d, data="z")),
         ],
     )
 
     assert_iter_eq(
         binarize(
             r.add(
+                a.add(b, data="x").add(c, data="y").add(d, data="z"),
                 data="w",
-                node=a.add(b, "x").add(c, "y").add(d, "z"),
             )
         ),
         [
             r.add(
+                a.add(N().add(b, data="x").add(c, data="y")).add(d, data="z"),
                 data="w",
-                node=a.add(N().add(b, "x").add(c, "y")).add(d, "z"),
             ),
             r.add(
+                a.add(N().add(b, data="x").add(d, data="z")).add(c, data="y"),
                 data="w",
-                node=a.add(N().add(b, "x").add(d, "z")).add(c, "y"),
             ),
             r.add(
+                a.add(b, data="x").add(N().add(c, data="y").add(d, data="z")),
                 data="w",
-                node=a.add(b, "x").add(N().add(c, "y").add(d, "z")),
             ),
         ],
     )

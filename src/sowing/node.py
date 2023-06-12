@@ -39,7 +39,14 @@ class Node:
         return replace(self, **kwargs)
 
     @overload
-    def add(self, node: Self, data: Hashable = None, index: int = -1) -> Self:
+    def add(
+        self,
+        node: Self,
+        /,
+        *,
+        data: Hashable | None = None,
+        index: int = -1,
+    ) -> Self:
         """
         Add a new child to this node.
 
@@ -52,7 +59,7 @@ class Node:
         ...
 
     @overload
-    def add(self, edge: Edge, index: int = -1) -> Self:
+    def add(self, edge: Edge, /, *, index: int = -1) -> Self:
         """
         Add an outgoing edge to this node.
 
@@ -65,14 +72,18 @@ class Node:
 
     def add(
         self,
-        node: Self | Edge,
-        data: Hashable = None,
+        node_edge: Self | Edge,
+        /,
+        *,
+        data: Hashable | None = None,
         index: int = -1,
     ) -> Self:
-        if isinstance(node, self.__class__):
-            edge = Edge(node=node, data=data)
-        else:
-            edge = node
+        match node_edge:
+            case self.__class__():
+                edge = Edge(node=node_edge, data=data)
+
+            case Edge():
+                edge = node_edge
 
         if index == -1:
             index = len(self.edges)
@@ -81,29 +92,15 @@ class Node:
         after = self.edges[index:]
         return self.replace(edges=before + (edge,) + after)
 
-    @overload
-    def extend(self, nodes: Iterable[Self]) -> Self:
+    def extend(self, items: Iterable[Self] | Iterable[Edge]) -> Self:
         """
-        Append child nodes from an iterable.
+        Attach new nodes or edges from an iterable.
 
-        :param nodes: iterable of nodes
+        :param items: iterable of nodes or iterable of edges
         :returns: updated node
         """
-        ...
-
-    @overload
-    def extend(self, edges: Iterable[Edge]) -> Self:
-        """
-        Append edges from an iterable.
-
-        :param edges: iterable of edges
-        :returns: updated node
-        """
-        ...
-
-    def extend(self, nodes: Iterable[Self] | Iterable[Edge]) -> Self:
-        for node in nodes:
-            self = self.add(node)
+        for item in items:
+            self = self.add(item)
 
         return self
 

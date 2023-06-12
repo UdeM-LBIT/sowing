@@ -179,8 +179,8 @@ def test_supertree():
 
     assert supertree(
         Node()
-        .add(Node().add(Node("a")), "data left")
-        .add(Node().add(Node("b")), "data right"),
+        .add(Node().add(Node("a")), data="data left")
+        .add(Node().add(Node("b")), data="data right"),
     ) == (Node().add(Node("a")).add(Node("b")))
 
     assert supertree(

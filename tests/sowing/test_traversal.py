@@ -61,30 +61,30 @@ def test_map_relabel():
 def test_map_edges():
     before = (
         Node("a")
-        .add(data="z", node=Node("b").add(Node("c")))
+        .add(Node("b").add(Node("c")), data="z")
         .add(
-            data="y",
-            node=Node("d").add(
+            Node("d").add(
+                Node("e")
+                .add(Node("f"), data="w")
+                .add(Node("g"), data="v")
+                .add(Node("h").add(Node("i"), data="t"), data="u"),
                 data="x",
-                node=Node("e")
-                .add(data="w", node=Node("f"))
-                .add(data="v", node=Node("g"))
-                .add(data="u", node=Node("h").add(data="t", node=Node("i"))),
             ),
+            data="y",
         )
     )
     after = (
         Node("aa")
-        .add(data="zzz", node=Node("bb").add(Node("cc")))
+        .add(Node("bb").add(Node("cc")), data="zzz")
         .add(
-            data="yyy",
-            node=Node("dd").add(
+            Node("dd").add(
+                Node("ee")
+                .add(Node("ff"), data="www")
+                .add(Node("gg"), data="vvv")
+                .add(Node("hh").add(Node("ii"), data="ttt"), data="uuu"),
                 data="xxx",
-                node=Node("ee")
-                .add(data="www", node=Node("ff"))
-                .add(data="vvv", node=Node("gg"))
-                .add(data="uuu", node=Node("hh").add(data="ttt", node=Node("ii"))),
             ),
+            data="yyy",
         )
     )
 
