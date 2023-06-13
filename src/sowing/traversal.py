@@ -1,113 +1,100 @@
-from typing import Callable, Generator, Hashable, Iterator
-from enum import Enum, auto
-from functools import wraps
+from typing import Callable, Generator, Hashable
+from functools import wraps, partial
 from inspect import signature
 from .node import Node, Zipper
 
 
-class Order(Enum):
-    """Tree traversal orders."""
-
-    # Visit nodes before their children, in depth-first order
-    Pre = auto()
-
-    # Visit nodes after their children, in depth-first order
-    Post = auto()
-
-    # Visit nodes along an eulerian tour
-    Euler = auto()
+Traversal = Generator[Zipper, Zipper, None]
 
 
-def _none_else(left, right):
-    return left if left is not None else right
+def _default(value):
+    result = yield value
+    return result if result is not None else value
 
 
-Traversal = Generator[Zipper, Zipper, Node]
+def depth(node: Node, preorder: bool = False, reverse: bool = False) -> Traversal:
+    """
+    Traverse a tree in depth-first order.
 
-
-def _traverse_pre_post(node: Node, preorder: bool, reverse: bool) -> Traversal:
+    :param node: root node to start from
+    :param preorder: pass True to visit parents before children (preorder),
+        _defaults to children before parents (postorder)
+    :param reverse: pass True to reverse the order
+    :returns: generator that yields nodes in the specified order
+    """
     cursor = node.unzip()
-
-    if reverse:
-
-        def advance():
-            return cursor.prev(preorder=preorder)
-
-    else:
-
-        def advance():
-            return cursor.next(preorder=preorder)
+    advance = partial(
+        Zipper.prev if reverse else Zipper.next,
+        preorder=preorder,
+    )
 
     root_start = not preorder == reverse
 
     if not root_start:
-        cursor = advance()
+        cursor = advance(cursor)
 
     while True:
-        next_cursor = yield cursor
-        cursor = _none_else(next_cursor, cursor)
+        cursor = yield from _default(cursor)
 
         if not root_start and cursor.is_root():
-            return cursor.zip()
+            return
 
-        cursor = advance()
+        cursor = advance(cursor)
 
         if root_start and cursor.is_root():
-            return cursor.zip()
+            return
 
 
-def _traverse_euler(node: Node, reverse: bool) -> Traversal:
+def euler(node: Node, reverse: bool = False) -> Traversal:
+    """
+    Traverse a tree along an eulerian tour.
+
+    :param node: root node to start from
+    :param reverse: pass True to reverse the order
+    :returns: generator that yields nodes in the specified order
+    """
     child = -1 if reverse else 0
     sibling = -1 if reverse else 1
     cursor = node.unzip()
 
     while True:
-        next_cursor = yield cursor
-        cursor = _none_else(next_cursor, cursor)
+        cursor = yield from _default(cursor)
 
         if not cursor.is_leaf():
             cursor = cursor.down(child)
         else:
             while cursor.is_last_sibling(sibling) and not cursor.is_root():
                 cursor = cursor.up()
-                next_cursor = yield cursor
-                cursor = _none_else(next_cursor, cursor)
+                cursor = yield from _default(cursor)
 
             if cursor.is_root():
-                return cursor.zip()
+                return
             else:
                 pos = cursor.index
                 cursor = cursor.up()
-                next_cursor = yield cursor
-                cursor = _none_else(next_cursor, cursor)
+                cursor = yield from _default(cursor)
                 cursor = cursor.down(pos + sibling)
 
 
-def traverse(
-    root: Node,
-    order: Order = Order.Post,
-    reverse: bool = False,
-) -> Traversal:
+def leaves(root: Node, reverse: bool = False) -> Traversal:
     """
-    Make a generator that traverses a tree in a given order.
+    Traverse the leaves of a tree.
 
-    :param root: root node to start from
-    :param order: traversal order
+    :param node: root node to start from
     :param reverse: pass True to reverse the order
-    :returns: generator that yields nodes in the specified order
+    :returns: generator that yields leaves in the specified order
     """
-    match order:
-        case Order.Post:
-            return _traverse_pre_post(root, preorder=False, reverse=reverse)
+    advance = Zipper.prev if reverse else Zipper.next
+    cursor = advance(root.unzip())
 
-        case Order.Pre:
-            return _traverse_pre_post(root, preorder=True, reverse=reverse)
+    while True:
+        if cursor.is_leaf():
+            cursor = yield from _default(cursor)
 
-        case Order.Euler:
-            return _traverse_euler(root, reverse=reverse)
+        if cursor.is_root():
+            return
 
-        case _:
-            raise ValueError(order)
+        cursor = advance(cursor)
 
 
 def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node | None:
@@ -123,9 +110,10 @@ def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node | No
 
     try:
         while True:
-            cursor = traversal.send(func(cursor))
-    except StopIteration as end:
-        return end.value
+            cursor = func(cursor)
+            cursor = traversal.send(cursor)
+    except StopIteration:
+        return cursor.zip()
 
 
 def mapnodes(
@@ -156,8 +144,3 @@ def mapnodes(
         return zipper.replace(node=node, data=data)
 
     return maptree(wrapper, traversal)
-
-
-def leaves(root: Node) -> Iterator[Node]:
-    """Retrieve all leaves below a node."""
-    return (zipper.node for zipper in traverse(root) if zipper.is_leaf())

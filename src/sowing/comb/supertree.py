@@ -62,12 +62,12 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
         if base.is_root():
             return cursor
 
-        outgroup = next(traversal.leaves(base.sibling().node))
+        outgroup = next(traversal.leaves(base.sibling().node)).node
         triples.append(Triple(children, outgroup))
         return base.replace(node=children[0])
 
-    traversal.maptree(extract_parts, traversal.traverse(root))
-    leaves = list(traversal.leaves(root))
+    traversal.maptree(extract_parts, traversal.depth(root))
+    leaves = [cursor.node for cursor in traversal.leaves(root)]
     return leaves, triples, fans
 
 

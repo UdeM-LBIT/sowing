@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.traversal import Order, traverse, mapnodes
+from sowing import traversal
 from ..clade import Clade, Branch, Map
 
 
@@ -50,4 +50,4 @@ def write_node(node: Node, branch: Branch | None) -> tuple[Node, None]:
 
 def write(root: Node) -> str:
     """Encode a tree into a Newick string."""
-    return mapnodes(write_node, traverse(root, Order.Post)).data + ";"
+    return traversal.mapnodes(write_node, traversal.depth(root)).data + ";"

@@ -1,6 +1,6 @@
 from sowing.node import Node as N
 from sowing.lca import LowestCommonAncestor
-from sowing.traversal import traverse
+from sowing import traversal
 import pytest
 
 
@@ -9,8 +9,7 @@ tree = (
     .add(N("1").add(N("2")).add(N("3").add(N("4")).add(N("5"))))
     .add(N("6").add(N("7")).add(N("8")).add(N("9").add(N("10"))))
 )
-nodes = {cursor.node.data: cursor.node for cursor in traverse(tree)}
-
+nodes = {cursor.node.data: cursor.node for cursor in traversal.depth(tree)}
 lca = LowestCommonAncestor(tree)
 
 

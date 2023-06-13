@@ -1,4 +1,4 @@
-from sowing.traversal import traverse, Order
+from sowing import traversal
 from sowing.node import Node
 from .util.rangequery import RangeQuery
 
@@ -20,7 +20,7 @@ class LowestCommonAncestor:
         self.traversal = []
         self.traversal_index: dict[Node, int] = {}
 
-        for cursor in traverse(tree, Order.Euler):
+        for cursor in traversal.euler(tree):
             if cursor.node not in self.traversal_index:
                 self.traversal_index[cursor.node] = len(self.traversal)
 

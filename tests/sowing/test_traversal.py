@@ -1,8 +1,9 @@
 from sowing.node import Node
-from sowing.traversal import Order, traverse, maptree, mapnodes, leaves
+from sowing.traversal import depth, euler, leaves, maptree, mapnodes
 
 
 def test_traverse():
+    single = Node("a")
     root = (
         Node("a")
         .add(Node("b").add(Node("c")))
@@ -16,14 +17,27 @@ def test_traverse():
     def assert_iter_eq(iterable1, iterable2):
         assert [zipper.node.data for zipper in iterable1] == list(iterable2)
 
-    assert_iter_eq(traverse(root), "cbfgiheda")
-    assert_iter_eq(traverse(root, reverse=True), "adehigfbc")
+    assert_iter_eq(depth(single), "a")
+    assert_iter_eq(depth(single, reverse=True), "a")
+    assert_iter_eq(depth(single, preorder=True), "a")
+    assert_iter_eq(depth(single, preorder=True, reverse=True), "a")
 
-    assert_iter_eq(traverse(root, Order.Pre), "abcdefghi")
-    assert_iter_eq(traverse(root, Order.Pre, reverse=True), "ihgfedcba")
+    assert_iter_eq(euler(single), "a")
+    assert_iter_eq(euler(single, reverse=True), "a")
 
-    assert_iter_eq(traverse(root, Order.Euler), "abcbadefegehiheda")
-    assert_iter_eq(traverse(root, Order.Euler, reverse=True), "adehihegefedabcba")
+    assert_iter_eq(leaves(single), "a")
+    assert_iter_eq(leaves(single, reverse=True), "a")
+
+    assert_iter_eq(depth(root), "cbfgiheda")
+    assert_iter_eq(depth(root, reverse=True), "adehigfbc")
+    assert_iter_eq(depth(root, preorder=True), "abcdefghi")
+    assert_iter_eq(depth(root, preorder=True, reverse=True), "ihgfedcba")
+
+    assert_iter_eq(euler(root), "abcbadefegehiheda")
+    assert_iter_eq(euler(root, reverse=True), "adehihegefedabcba")
+
+    assert_iter_eq(leaves(root), "cfgi")
+    assert_iter_eq(leaves(root, reverse=True), "igfc")
 
 
 def test_map_relabel():
@@ -36,7 +50,7 @@ def test_map_relabel():
             )
         )
     )
-    after = (
+    after_depth = (
         Node("aa")
         .add(Node("bb").add(Node("cc")))
         .add(
@@ -48,14 +62,23 @@ def test_map_relabel():
             )
         )
     )
+    after_leaves = (
+        Node("a")
+        .add(Node("b").add(Node("cc")))
+        .add(
+            Node("d").add(
+                Node("e").add(Node("ff")).add(Node("gg")).add(Node("h").add(Node("ii")))
+            )
+        )
+    )
 
     # Double all node names (preorder or postorder)
     def relabel(node):
         return node.replace(data=node.data * 2)
 
-    assert mapnodes(relabel, traverse(before)) == after
-    assert mapnodes(relabel, traverse(before, Order.Pre)) == after
-    assert mapnodes(relabel, traverse(before, Order.Post)) == after
+    assert mapnodes(relabel, depth(before)) == after_depth
+    assert mapnodes(relabel, depth(before, preorder=True)) == after_depth
+    assert mapnodes(relabel, leaves(before)) == after_leaves
 
 
 def test_map_edges():
@@ -94,9 +117,8 @@ def test_map_edges():
         edge = edge * 3 if edge is not None else None
         return node, edge
 
-    assert mapnodes(relabel, traverse(before)) == after
-    assert mapnodes(relabel, traverse(before, Order.Pre)) == after
-    assert mapnodes(relabel, traverse(before, Order.Post)) == after
+    assert mapnodes(relabel, depth(before)) == after
+    assert mapnodes(relabel, depth(before, preorder=True)) == after
 
 
 def test_map_replace():
@@ -122,9 +144,8 @@ def test_map_replace():
 
         return node
 
-    assert mapnodes(contract_unary, traverse(before)) == after
-    assert mapnodes(contract_unary, traverse(before, Order.Pre)) == after
-    assert mapnodes(contract_unary, traverse(before, Order.Post)) == after
+    assert mapnodes(contract_unary, depth(before)) == after
+    assert mapnodes(contract_unary, depth(before, preorder=True)) == after
 
 
 def test_map_remove():
@@ -155,8 +176,8 @@ def test_map_remove():
 
         return node
 
-    assert mapnodes(contract_remove, traverse(before, Order.Pre)) == after_pre
-    assert mapnodes(contract_remove, traverse(before, Order.Post)) == after_post
+    assert mapnodes(contract_remove, depth(before)) == after_post
+    assert mapnodes(contract_remove, depth(before, preorder=True)) == after_pre
 
 
 def test_map_remove_all():
@@ -174,8 +195,8 @@ def test_map_remove_all():
     def remove_all(node):
         return None
 
-    assert mapnodes(remove_all, traverse(before, Order.Pre)) is None
-    assert mapnodes(remove_all, traverse(before, Order.Post)) is None
+    assert mapnodes(remove_all, depth(before)) is None
+    assert mapnodes(remove_all, depth(before, preorder=True)) is None
 
 
 def test_map_fold():
@@ -198,8 +219,7 @@ def test_map_fold():
         args = map(lambda edge: edge.node.data, node.edges)
         return Node(node.data(*args))
 
-    assert mapnodes(fold_expression, traverse(before)) == after
-    assert mapnodes(fold_expression, traverse(before, Order.Post)) == after
+    assert mapnodes(fold_expression, depth(before)) == after
 
 
 def test_map_expand():
@@ -214,9 +234,8 @@ def test_map_expand():
 
         return node
 
-    assert mapnodes(expand_value, traverse(before)) == after_post
-    assert mapnodes(expand_value, traverse(before, Order.Pre)) == after_pre
-    assert mapnodes(expand_value, traverse(before, Order.Post)) == after_post
+    assert mapnodes(expand_value, depth(before)) == after_post
+    assert mapnodes(expand_value, depth(before, preorder=True)) == after_pre
 
 
 def test_map_depth():
@@ -236,10 +255,11 @@ def test_map_depth():
     )
 
     # Replace node values by their depth
-    def depth(cursor):
+    def label_depth(cursor):
         return cursor.replace(node=cursor.node.replace(data=cursor.depth))
 
-    assert maptree(depth, traverse(before, Order.Pre)) == after
+    assert maptree(label_depth, depth(before)) == after
+    assert maptree(label_depth, depth(before, preorder=True)) == after
 
 
 def test_map_visits():
@@ -248,7 +268,7 @@ def test_map_visits():
         .add(Node(0).add(Node(0)))
         .add(Node(0).add(Node(0).add(Node(0)).add(Node(0)).add(Node(0).add(Node(0)))))
     )
-    after_pre_post = (
+    after_depth = (
         Node(1)
         .add(Node(1).add(Node(1)))
         .add(Node(1).add(Node(1).add(Node(1)).add(Node(1)).add(Node(1).add(Node(1)))))
@@ -262,23 +282,6 @@ def test_map_visits():
     def visit(node):
         return node.replace(data=node.data + 1)
 
-    assert mapnodes(visit, traverse(before)) == after_pre_post
-    assert mapnodes(visit, traverse(before, Order.Pre)) == after_pre_post
-    assert mapnodes(visit, traverse(before, Order.Post)) == after_pre_post
-    assert mapnodes(visit, traverse(before, Order.Euler)) == after_euler
-
-
-def test_leaves():
-    single = Node("a")
-    assert list(leaves(single)) == [Node("a")]
-
-    root = (
-        Node("a")
-        .add(Node("b").add(Node("c")))
-        .add(
-            Node("d").add(
-                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
-            )
-        )
-    )
-    assert list(leaves(root)) == list(map(Node, "cfgi"))
+    assert mapnodes(visit, depth(before)) == after_depth
+    assert mapnodes(visit, depth(before, preorder=True)) == after_depth
+    assert mapnodes(visit, euler(before)) == after_euler

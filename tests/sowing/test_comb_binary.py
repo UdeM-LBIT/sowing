@@ -18,19 +18,25 @@ def test_is_binary():
     assert not is_binary(a.add(a.add(b).add(c)).add(b.add(c)))
 
 
-def assert_iter_eq(iterable1, iterable2):
+def _assert_iter_eq(iterable1, iterable2):
     assert list(iterable1) == list(iterable2)
 
 
-def test_binarize_at_labeled():
-    assert_iter_eq(binarize_at(N("abc")), [N("abc")])
+def _assert_same_leaves(tree1, tree2):
+    assert set(cursor.node for cursor in traversal.leaves(tree1)) == set(
+        cursor.node for cursor in traversal.leaves(tree2)
+    )
 
-    assert_iter_eq(
+
+def test_binarize_at_labeled():
+    _assert_iter_eq(binarize_at(N("abc")), [N("abc")])
+
+    _assert_iter_eq(
         binarize_at(N().extend(map(N, "ab"))),
         [N().extend(map(N, "ab"))],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend(map(N, "abc"))),
         [
             N().add(N().add(a).add(b)).add(c),
@@ -39,7 +45,7 @@ def test_binarize_at_labeled():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend(map(N, "abcd"))),
         [
             N().add(N().add(N().add(a).add(b)).add(c)).add(d),
@@ -67,7 +73,7 @@ def test_binarize_at_labeled():
         trees = set()
 
         for tree in binarize_at(root):
-            assert set(traversal.leaves(tree)) == set(traversal.leaves(root))
+            _assert_same_leaves(tree, root)
             trees.add(tree)
 
         count = prod(range(2 * n - 3, 0, -2))
@@ -75,19 +81,19 @@ def test_binarize_at_labeled():
 
 
 def test_binarize_at_unlabeled():
-    assert_iter_eq(binarize_at(N()), [N()])
+    _assert_iter_eq(binarize_at(N()), [N()])
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend((N() for _ in range(2)))),
         [N().extend((N() for _ in range(2)))],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend((N() for _ in range(3)))),
         [N().add(N().add(N()).add(N())).add(N())],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend((N() for _ in range(4)))),
         [
             N().add(N().add(N().add(N()).add(N())).add(N())).add(N()),
@@ -95,7 +101,7 @@ def test_binarize_at_unlabeled():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().extend((N() for _ in range(5)))),
         [
             N().add(N().add(N().add(N().add(N()).add(N())).add(N())).add(N())).add(N()),
@@ -117,14 +123,14 @@ def test_binarize_at_unlabeled():
         trees = set()
 
         for tree in binarize_at(root):
-            assert set(traversal.leaves(tree)) == set(traversal.leaves(root))
+            _assert_same_leaves(tree, root)
             trees.add(tree)
 
         assert len(trees) == count
 
 
 def test_binarize_at_multree():
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().add(a).add(a).add(b)),
         [
             N().add(N().add(a).add(a)).add(b),
@@ -132,7 +138,7 @@ def test_binarize_at_multree():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().add(a).add(b).add(b)),
         [
             N().add(N().add(a).add(b)).add(b),
@@ -140,7 +146,7 @@ def test_binarize_at_multree():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize_at(N().add(a).add(a).add(b).add(b)),
         [
             N().add(N().add(N().add(a).add(a)).add(b)).add(b),
@@ -175,23 +181,23 @@ def test_binarize_at_multree():
             )
 
             for tree in binarize_at(root):
-                assert set(traversal.leaves(tree)) == set(traversal.leaves(root))
+                _assert_same_leaves(tree, root)
                 trees.add(tree)
 
         assert len(trees) == count
 
 
 def test_binarize():
-    assert_iter_eq(binarize(N("abc")), [N("abc")])
+    _assert_iter_eq(binarize(N("abc")), [N("abc")])
 
-    assert_iter_eq(binarize(a.add(b)), [a.add(b)])
+    _assert_iter_eq(binarize(a.add(b)), [a.add(b)])
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize(a.add(b).add(c)),
         [a.add(b).add(c)],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize(a.add(b).add(c).add(d)),
         [
             a.add(N().add(b).add(c)).add(d),
@@ -200,7 +206,7 @@ def test_binarize():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize(a.add(b, data="x").add(c, data="y").add(d, data="z")),
         [
             a.add(N().add(b, data="x").add(c, data="y")).add(d, data="z"),
@@ -209,7 +215,7 @@ def test_binarize():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize(
             r.add(
                 a.add(b, data="x").add(c, data="y").add(d, data="z"),
@@ -232,7 +238,7 @@ def test_binarize():
         ],
     )
 
-    assert_iter_eq(
+    _assert_iter_eq(
         binarize(
             N()
             .add(N().add(N().add(a).add(b)).add(p.add(c).add(d).add(e).add(f)).add(g))
