@@ -22,6 +22,7 @@ def test_empty():
     zipper = Zipper()
     assert zipper.is_root()
     assert zipper.is_empty()
+    assert zipper.is_leaf()
 
     zipper = Node("a").add(Node("b")).unzip().down().replace(node=None)
     assert not zipper.is_root()

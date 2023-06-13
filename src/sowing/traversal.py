@@ -110,7 +110,7 @@ def traverse(
             raise ValueError(order)
 
 
-def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node:
+def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node | None:
     """
     Transform positions on a tree along a given traversal.
 
@@ -136,9 +136,10 @@ def mapnodes(
     Transform the nodes of a tree along a given traversal.
 
     :param func: callback receiving each node of the tree (and optionally data
-        of the edge above), and returning an updated node (and edge data)
+        of the incoming edge), and returning an updated node (and edge data), or
+        None to remove the node and its subtree
     :param traversal: tree traversal generator
-    :returns: transformed tree
+    :returns: transformed tree, or None if the root was removed
     """
     params = signature(func).parameters
 

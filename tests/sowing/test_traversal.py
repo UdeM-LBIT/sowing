@@ -136,9 +136,14 @@ def test_map_remove():
             .add(Node("d").add(Node("e")).add(Node("f")))
             .add(Node("g"))
         )
-        .add(Node("h").add(Node("i")).add(Node("j")))
+        .add(Node("h").add(Node("i").add(Node("j"))))
     )
-    after = Node("a").add(Node("e")).add(Node("h").add(Node("i")).add(Node("j")))
+    after_pre = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("i").add(Node("j")))
+    )
+    after_post = Node("a").add(Node("e")).add(Node("j"))
 
     # Remove unary nodes and leaves “c”, “f” and “g”
     def contract_remove(node):
@@ -150,7 +155,27 @@ def test_map_remove():
 
         return node
 
-    assert mapnodes(contract_remove, traverse(before, Order.Post)) == after
+    assert mapnodes(contract_remove, traverse(before, Order.Pre)) == after_pre
+    assert mapnodes(contract_remove, traverse(before, Order.Post)) == after_post
+
+
+def test_map_remove_all():
+    before = (
+        Node("a")
+        .add(
+            Node("b")
+            .add(Node("c"))
+            .add(Node("d").add(Node("e")).add(Node("f")))
+            .add(Node("g"))
+        )
+        .add(Node("h").add(Node("i")).add(Node("j")))
+    )
+
+    def remove_all(node):
+        return None
+
+    assert mapnodes(remove_all, traverse(before, Order.Pre)) is None
+    assert mapnodes(remove_all, traverse(before, Order.Post)) is None
 
 
 def test_map_fold():

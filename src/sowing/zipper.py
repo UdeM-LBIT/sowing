@@ -30,7 +30,7 @@ class Zipper:
 
     def is_leaf(self) -> bool:
         """Test whether the pointed node is a leaf node."""
-        return not self.is_empty() and self.node.edges == ()
+        return self.node is None or self.node.edges == ()
 
     def down(self, index: int = 0) -> Self:
         """
@@ -69,7 +69,7 @@ class Zipper:
             raise ValueError("cannot attach to empty parent zipper")
 
         return self.parent.replace(
-            node=self.parent.node.add(self.node, self.data, self.index),
+            node=self.parent.node.add(self.node, data=self.data, index=self.index),
         )
 
     def is_last_sibling(self, direction: int = 1) -> bool:
