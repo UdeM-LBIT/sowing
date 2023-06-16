@@ -418,7 +418,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
     return nodes.pop(), token.end
 
 
-def parse(data: str) -> Node:
+def parse(data: str) -> Node[Clade, Branch]:
     """Parse a single tree encoded as a Newick string."""
     node, pos = parse_chain(data)
 
@@ -428,7 +428,7 @@ def parse(data: str) -> Node:
     return node
 
 
-def parse_all(data: str) -> list[Node]:
+def parse_all(data: str) -> list[Node[Clade, Branch]]:
     """Parse a sequence of trees encoded as Newick strings."""
     result = []
 

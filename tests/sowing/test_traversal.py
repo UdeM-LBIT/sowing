@@ -1,5 +1,6 @@
 from sowing.node import Node
-from sowing.traversal import depth, euler, leaves, maptree, mapnodes
+from sowing.traversal import depth, euler, leaves
+from sowing import traversal
 
 
 def test_traverse():
@@ -72,13 +73,13 @@ def test_map_relabel():
         )
     )
 
-    # Double all node names (preorder or postorder)
-    def relabel(node):
-        return node.replace(data=node.data * 2)
+    # Double all node names
+    def relabel(node, edge, *_):
+        return node * 2, edge
 
-    assert mapnodes(relabel, depth(before)) == after_depth
-    assert mapnodes(relabel, depth(before, preorder=True)) == after_depth
-    assert mapnodes(relabel, leaves(before)) == after_leaves
+    assert traversal.map(relabel, depth(before)) == after_depth
+    assert traversal.map(relabel, depth(before, preorder=True)) == after_depth
+    assert traversal.map(relabel, leaves(before)) == after_leaves
 
 
 def test_map_edges():
@@ -112,130 +113,13 @@ def test_map_edges():
     )
 
     # Double node names and triple edge names
-    def relabel(node, edge):
-        node = node.replace(data=node.data * 2)
+    def relabel(node, edge, *_):
+        node *= 2
         edge = edge * 3 if edge is not None else None
         return node, edge
 
-    assert mapnodes(relabel, depth(before)) == after
-    assert mapnodes(relabel, depth(before, preorder=True)) == after
-
-
-def test_map_replace():
-    before = (
-        Node("a")
-        .add(Node("b").add(Node("c")))
-        .add(
-            Node("d").add(
-                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
-            )
-        )
-    )
-    after = (
-        Node("a")
-        .add(Node("c"))
-        .add(Node("e").add(Node("f")).add(Node("g")).add(Node("i")))
-    )
-
-    # Replace all unary nodes with their child (preorder or postorder)
-    def contract_unary(node):
-        if len(node.edges) == 1:
-            return node.edges[0].node
-
-        return node
-
-    assert mapnodes(contract_unary, depth(before)) == after
-    assert mapnodes(contract_unary, depth(before, preorder=True)) == after
-
-
-def test_map_remove():
-    before = (
-        Node("a")
-        .add(
-            Node("b")
-            .add(Node("c"))
-            .add(Node("d").add(Node("e")).add(Node("f")))
-            .add(Node("g"))
-        )
-        .add(Node("h").add(Node("i").add(Node("j"))))
-    )
-    after_pre = (
-        Node("a")
-        .add(Node("b").add(Node("d").add(Node("e"))))
-        .add(Node("i").add(Node("j")))
-    )
-    after_post = Node("a").add(Node("e")).add(Node("j"))
-
-    # Remove unary nodes and leaves “c”, “f” and “g”
-    def contract_remove(node):
-        if len(node.edges) == 1:
-            return node.edges[0].node
-
-        if len(node.edges) == 0 and node.data in "cfg":
-            return None
-
-        return node
-
-    assert mapnodes(contract_remove, depth(before)) == after_post
-    assert mapnodes(contract_remove, depth(before, preorder=True)) == after_pre
-
-
-def test_map_remove_all():
-    before = (
-        Node("a")
-        .add(
-            Node("b")
-            .add(Node("c"))
-            .add(Node("d").add(Node("e")).add(Node("f")))
-            .add(Node("g"))
-        )
-        .add(Node("h").add(Node("i")).add(Node("j")))
-    )
-
-    def remove_all(node):
-        return None
-
-    assert mapnodes(remove_all, depth(before)) is None
-    assert mapnodes(remove_all, depth(before, preorder=True)) is None
-
-
-def test_map_fold():
-    before = (
-        Node(int.__mul__)
-        .add(Node(int.__add__).add(Node(6)).add(Node(2)))
-        .add(
-            Node(int.__floordiv__)
-            .add(Node(18))
-            .add(Node(int.__mul__).add(Node(2)).add(Node(3)))
-        )
-    )
-    after = Node(24)
-
-    # Fold arithmetical expressions to their result (postorder only)
-    def fold_expression(node):
-        if type(node.data) == int:
-            return node
-
-        args = map(lambda edge: edge.node.data, node.edges)
-        return Node(node.data(*args))
-
-    assert mapnodes(fold_expression, depth(before)) == after
-
-
-def test_map_expand():
-    before = Node(3)
-    after_pre = Node(3).add(Node(2).add(Node(1).add(Node(0))))
-    after_post = Node(3).add(Node(2))
-
-    # Expand nodes according to their value
-    def expand_value(node):
-        if node.data > 0:
-            return node.add(Node(node.data - 1))
-
-        return node
-
-    assert mapnodes(expand_value, depth(before)) == after_post
-    assert mapnodes(expand_value, depth(before, preorder=True)) == after_pre
+    assert traversal.map(relabel, depth(before)) == after
+    assert traversal.map(relabel, depth(before, preorder=True)) == after
 
 
 def test_map_depth():
@@ -255,11 +139,35 @@ def test_map_depth():
     )
 
     # Replace node values by their depth
-    def label_depth(cursor):
-        return cursor.replace(node=cursor.node.replace(data=cursor.depth))
+    def map_depth(node, edge, _, depth):
+        return depth, edge
 
-    assert maptree(label_depth, depth(before)) == after
-    assert maptree(label_depth, depth(before, preorder=True)) == after
+    assert traversal.map(map_depth, depth(before)) == after
+    assert traversal.map(map_depth, depth(before, preorder=True)) == after
+
+
+def test_map_sibling():
+    before = (
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(
+            Node("d").add(
+                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
+            )
+        )
+    )
+    after = (
+        Node(-1)
+        .add(Node(0).add(Node(0)))
+        .add(Node(1).add(Node(0).add(Node(0)).add(Node(1)).add(Node(2).add(Node(0)))))
+    )
+
+    # Replace node values by their sibling index
+    def map_index(node, edge, index, *_):
+        return index, edge
+
+    assert traversal.map(map_index, depth(before)) == after
+    assert traversal.map(map_index, depth(before, preorder=True)) == after
 
 
 def test_map_visits():
@@ -279,9 +187,134 @@ def test_map_visits():
         .add(Node(2).add(Node(4).add(Node(1)).add(Node(1)).add(Node(2).add(Node(1)))))
     )
 
-    def visit(node):
-        return node.replace(data=node.data + 1)
+    def visit(node, edge, *_):
+        return node + 1, edge
 
-    assert mapnodes(visit, depth(before)) == after_depth
-    assert mapnodes(visit, depth(before, preorder=True)) == after_depth
-    assert mapnodes(visit, euler(before)) == after_euler
+    assert traversal.map(visit, depth(before)) == after_depth
+    assert traversal.map(visit, depth(before, preorder=True)) == after_depth
+    assert traversal.map(visit, euler(before)) == after_euler
+
+
+def test_fold_replace():
+    before = (
+        Node("a")
+        .add(Node("b").add(Node("c")))
+        .add(
+            Node("d").add(
+                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
+            )
+        )
+    )
+    after = (
+        Node("a")
+        .add(Node("c"))
+        .add(Node("e").add(Node("f")).add(Node("g")).add(Node("i")))
+    )
+
+    # Replace all unary nodes with their child
+    def contract_unary(zipper):
+        node = zipper.node
+
+        if len(node.edges) == 1:
+            return zipper.replace(node=node.edges[0].node)
+
+        return zipper
+
+    assert traversal.fold(contract_unary, depth(before)) == after
+    assert traversal.fold(contract_unary, depth(before, preorder=True)) == after
+
+
+def test_fold_remove():
+    before = (
+        Node("a")
+        .add(
+            Node("b")
+            .add(Node("c"))
+            .add(Node("d").add(Node("e")).add(Node("f")))
+            .add(Node("g"))
+        )
+        .add(Node("h").add(Node("i").add(Node("j"))))
+    )
+    after_pre = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("i").add(Node("j")))
+    )
+    after_post = Node("a").add(Node("e")).add(Node("j"))
+
+    # Remove unary nodes and leaves “c”, “f” and “g”
+    def contract_remove(zipper):
+        node = zipper.node
+
+        if len(node.edges) == 1:
+            return zipper.replace(node=node.edges[0].node)
+
+        if len(node.edges) == 0 and node.data in "cfg":
+            return zipper.replace(node=None)
+
+        return zipper
+
+    assert traversal.fold(contract_remove, depth(before)) == after_post
+    assert traversal.fold(contract_remove, depth(before, preorder=True)) == after_pre
+
+
+def test_fold_remove_all():
+    before = (
+        Node("a")
+        .add(
+            Node("b")
+            .add(Node("c"))
+            .add(Node("d").add(Node("e")).add(Node("f")))
+            .add(Node("g"))
+        )
+        .add(Node("h").add(Node("i")).add(Node("j")))
+    )
+
+    def remove_all(zipper):
+        return zipper.replace(node=None)
+
+    assert traversal.fold(remove_all, depth(before)) is None
+    assert traversal.fold(remove_all, depth(before, preorder=True)) is None
+
+
+def test_fold_reduce():
+    before = (
+        Node(int.__mul__)
+        .add(Node(int.__add__).add(Node(6)).add(Node(2)))
+        .add(
+            Node(int.__floordiv__)
+            .add(Node(18))
+            .add(Node(int.__mul__).add(Node(2)).add(Node(3)))
+        )
+    )
+    after = Node(24)
+
+    # Reduce arithmetical expressions to their result
+    def reduce(zipper):
+        node = zipper.node
+
+        if type(node.data) == int:
+            return zipper
+
+        args = map(lambda edge: edge.node.data, node.edges)
+        return zipper.replace(node=Node(node.data(*args)))
+
+    assert traversal.fold(reduce, depth(before)) == after
+
+
+def test_fold_expand():
+    before = Node(3)
+    after_pre = Node(3).add(Node(2).add(Node(1).add(Node(0))))
+    after_post = Node(3).add(Node(2))
+
+    # Expand nodes according to their value
+    def expand_value(zipper):
+        node = zipper.node
+
+        if node.data > 0:
+            return zipper.replace(node=node.add(Node(node.data - 1)))
+
+        return zipper
+
+    assert traversal.fold(expand_value, depth(before)) == after_post
+    assert traversal.fold(expand_value, depth(before, preorder=True)) == after_pre

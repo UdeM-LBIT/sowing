@@ -1,24 +1,39 @@
-from typing import Callable, Generator, Hashable
+from typing import cast, Any, Callable, Generator, Hashable, TypeVar
 from functools import wraps, partial
-from inspect import signature
-from .node import Node, Zipper
+from .node import Node
+from .zipper import Zipper
 
 
-Traversal = Generator[Zipper, Zipper, None]
+T = TypeVar("T")
+U = TypeVar("U")
+
+NodeData = TypeVar("NodeData", bound=Hashable)
+EdgeData = TypeVar("EdgeData", bound=Hashable)
+OutNodeData = TypeVar("OutNodeData", bound=Hashable)
+OutEdgeData = TypeVar("OutEdgeData", bound=Hashable)
 
 
-def _default(value):
+Traversal = Generator[
+    Zipper[NodeData, EdgeData], Zipper[OutNodeData, OutEdgeData], None
+]
+
+
+def _default(value: T) -> Generator[T, U | None, U | T]:
     result = yield value
     return result if result is not None else value
 
 
-def depth(node: Node, preorder: bool = False, reverse: bool = False) -> Traversal:
+def depth(
+    node: Node[NodeData, EdgeData],
+    preorder: bool = False,
+    reverse: bool = False,
+) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse a tree in depth-first order.
 
     :param node: root node to start from
     :param preorder: pass True to visit parents before children (preorder),
-        _defaults to children before parents (postorder)
+        defaults to children before parents (postorder)
     :param reverse: pass True to reverse the order
     :returns: generator that yields nodes in the specified order
     """
@@ -27,7 +42,6 @@ def depth(node: Node, preorder: bool = False, reverse: bool = False) -> Traversa
         Zipper.prev if reverse else Zipper.next,
         preorder=preorder,
     )
-
     root_start = not preorder == reverse
 
     if not root_start:
@@ -45,7 +59,10 @@ def depth(node: Node, preorder: bool = False, reverse: bool = False) -> Traversa
             return
 
 
-def euler(node: Node, reverse: bool = False) -> Traversal:
+def euler(
+    node: Node[NodeData, EdgeData],
+    reverse: bool = False,
+) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse a tree along an eulerian tour.
 
@@ -76,7 +93,10 @@ def euler(node: Node, reverse: bool = False) -> Traversal:
                 cursor = cursor.down(pos + sibling)
 
 
-def leaves(root: Node, reverse: bool = False) -> Traversal:
+def leaves(
+    node: Node[NodeData, EdgeData],
+    reverse: bool = False,
+) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse the leaves of a tree.
 
@@ -85,7 +105,7 @@ def leaves(root: Node, reverse: bool = False) -> Traversal:
     :returns: generator that yields leaves in the specified order
     """
     advance = Zipper.prev if reverse else Zipper.next
-    cursor = advance(root.unzip())
+    cursor = advance(node.unzip())
 
     while True:
         if cursor.is_leaf():
@@ -97,50 +117,60 @@ def leaves(root: Node, reverse: bool = False) -> Traversal:
         cursor = advance(cursor)
 
 
-def maptree(func: Callable[[Zipper], Zipper], traversal: Traversal) -> Node | None:
+def fold(
+    func: Callable[[Zipper[NodeData, EdgeData]], Zipper[OutNodeData, OutEdgeData]],
+    traversal: Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData],
+) -> Node[OutNodeData, OutEdgeData] | None:
     """
-    Transform positions on a tree along a given traversal.
+    Transform a tree along a given traversal.
+
+    For each node along the traversal, the folding callback is invoked with
+    a cursor pointing on this node. The callback can transform this cursor in
+    any way (including changing the tree structure) and returns the updated
+    cursor, which is used as a starting point to continue the traversal.
 
     :param func: callback receiving zipper values along the traversal
         and returning an updated zipper
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
-    cursor = next(traversal)
+    in_cursor = next(traversal)
+    cursor = cast(Zipper[Any, Any], in_cursor)
 
     try:
         while True:
             cursor = func(cursor)
             cursor = traversal.send(cursor)
     except StopIteration:
-        return cursor.zip()
+        out_cursor = cast(Zipper[OutNodeData, OutEdgeData], cursor)
+        return out_cursor.zip()
 
 
-def mapnodes(
-    func: Callable[[Node], Node] | Callable[[Node, Hashable], tuple[Node, Hashable]],
+def map(
+    func: Callable[[NodeData, EdgeData, int, int], tuple[OutNodeData, OutEdgeData]],
     traversal: Traversal,
-) -> Node:
+) -> Node[OutNodeData, OutEdgeData]:
     """
-    Transform the nodes of a tree along a given traversal.
+    Map values attached to nodes and edges along a given tree traversal.
 
-    :param func: callback receiving each node of the tree (and optionally data
-        of the incoming edge), and returning an updated node (and edge data), or
-        None to remove the node and its subtree
-    :param traversal: tree traversal generator
-    :returns: transformed tree, or None if the root was removed
+    For each node along the traversal, the mapping callback is invoked with
+
+    (1) the data object attached to the node,
+    (2) the data object attached to its parent edge,
+    (3) the node’s sibling index relative to its parent, and
+    (4) its depth in the tree.
+
+    The mapping callback returns a tuple of two values, the updated data object
+    for the node and for the parent edge.
+
+    :param func: mapping callback
+    :param traversal: tree traversal
+    :returns: transformed tree
     """
-    params = signature(func).parameters
 
     @wraps(func)
     def wrapper(zipper: Zipper):
-        node = zipper.node
-        data = zipper.data
+        node, edge = func(zipper.node.data, zipper.data, zipper.index, zipper.depth)
+        return zipper.replace(node=zipper.node.replace(data=node), data=edge)
 
-        if len(params) == 2:
-            node, data = func(node, data)
-        else:
-            node = func(node)
-
-        return zipper.replace(node=node, data=data)
-
-    return maptree(wrapper, traversal)
+    return fold(wrapper, traversal)

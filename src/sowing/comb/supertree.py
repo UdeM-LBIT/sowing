@@ -66,7 +66,7 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
         triples.append(Triple(children, outgroup))
         return base.replace(node=children[0])
 
-    traversal.maptree(extract_parts, traversal.depth(root))
+    traversal.fold(extract_parts, traversal.depth(root))
     leaves = [cursor.node for cursor in traversal.leaves(root)]
     return leaves, triples, fans
 

@@ -1,4 +1,5 @@
 from sowing.node import Node
+from sowing.zipper import Zipper
 from sowing import traversal
 from ..clade import Clade, Branch, Map
 
@@ -21,7 +22,10 @@ def write_props(props: Map) -> str:
     )
 
 
-def write_node(node: Node, branch: Branch | None) -> tuple[Node, None]:
+def write_node(cursor: Zipper[Clade | None, Branch | None]) -> Zipper[str, None]:
+    node = cursor.node
+    branch = cursor.data
+
     if node.edges:
         data = "(" + ",".join(edge.node.data for edge in node.edges) + ")"
     else:
@@ -45,9 +49,9 @@ def write_node(node: Node, branch: Branch | None) -> tuple[Node, None]:
         if branch.props:
             data += write_props(branch.props)
 
-    return Node(data), None
+    return cursor.replace(node=Node(data), data=None)
 
 
-def write(root: Node) -> str:
+def write(root: Node[Clade | None, Branch | None]) -> str:
     """Encode a tree into a Newick string."""
-    return traversal.mapnodes(write_node, traversal.depth(root)).data + ";"
+    return traversal.fold(write_node, traversal.depth(root)).data + ";"
