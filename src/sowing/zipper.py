@@ -1,16 +1,26 @@
-from typing import Hashable, Self, Optional
+from typing import Generic, Hashable, Self, TypeVar, TYPE_CHECKING
 from dataclasses import dataclass, replace
 from .util.dataclasses import repr_default
 
 
+if TYPE_CHECKING:
+    from .node import Node
+
+
+NodeData = TypeVar("NodeData", bound=Hashable)
+EdgeData = TypeVar("EdgeData", bound=Hashable)
+OutNodeData = TypeVar("OutNodeData", bound=Hashable)
+OutEdgeData = TypeVar("OutEdgeData", bound=Hashable)
+
+
 @repr_default
 @dataclass(frozen=True, slots=True)
-class Zipper:
+class Zipper(Generic[NodeData, EdgeData]):
     # Currently pointed node
-    node: Optional["Node"] = None  # noqa
+    node: "Node[NodeData, EdgeData] | None" = None
 
     # Data attached to the incoming edge
-    data: Hashable | None = None
+    data: EdgeData | None = None
 
     # Child index into the parent node
     index: int = -1
@@ -19,7 +29,7 @@ class Zipper:
     depth: int = 0
 
     # Parent pointer, or None if at root
-    parent: Self | None = None
+    parent: "Zipper[NodeData, EdgeData] | None" = None
 
     def replace(self, **kwargs) -> Self:
         return replace(self, **kwargs)
@@ -32,7 +42,7 @@ class Zipper:
         """Test whether the pointed node is a leaf node."""
         return self.node is None or self.node.edges == ()
 
-    def down(self, index: int = 0) -> Self:
+    def down(self, index: int = 0) -> "Zipper[NodeData, EdgeData]":
         """
         Move to a child of the pointed node.
 
@@ -40,12 +50,12 @@ class Zipper:
             negative indices are supported (default: first child)
         :returns: updated zipper
         """
-        if self.is_empty() or index >= len(self.node.edges):
+        if self.node is None or index >= len(self.node.edges):
             raise IndexError("child index out of range")
 
         edges = self.node.edges
         index %= len(edges)
-        return Zipper(
+        return self.replace(
             node=edges[index].node,
             data=edges[index].data,
             parent=self.replace(node=self.node.pop(index)),
@@ -57,12 +67,12 @@ class Zipper:
         """Test whether the pointed node is a root node."""
         return self.parent is None
 
-    def up(self) -> Self:
+    def up(self) -> "Zipper[NodeData, EdgeData]":
         """Move to the parent of the pointed node."""
-        if self.is_root():
+        if self.parent is None:
             raise IndexError("cannot go up")
 
-        if self.is_empty():
+        if self.node is None:
             return self.parent
 
         if self.parent.node is None:
@@ -90,7 +100,7 @@ class Zipper:
 
         return self.index == len(self.parent.node.edges)
 
-    def sibling(self, offset: int = 1) -> Self:
+    def sibling(self, offset: int = 1) -> "Zipper[NodeData, EdgeData]":
         """
         Move to a sibling of the pointed node.
 
@@ -109,7 +119,7 @@ class Zipper:
         index %= len(self.parent.node.edges) + 1
         return self.up().down(index)
 
-    def _preorder(self, flip: bool) -> Self:
+    def _preorder(self, flip: bool) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
@@ -124,7 +134,7 @@ class Zipper:
 
         return self.sibling(sibling)
 
-    def _postorder(self, flip: bool) -> Self:
+    def _postorder(self, flip: bool) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
@@ -144,7 +154,7 @@ class Zipper:
 
         return self
 
-    def next(self, preorder: bool = False) -> Self:
+    def next(self, preorder: bool = False) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the next node in preorder or postorder.
 
@@ -156,7 +166,7 @@ class Zipper:
         else:
             return self._postorder(flip=False)
 
-    def prev(self, preorder: bool = False) -> Self:
+    def prev(self, preorder: bool = False) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the previous node in preorder or postorder.
 
@@ -168,7 +178,7 @@ class Zipper:
         else:
             return self._preorder(flip=True)
 
-    def zip(self) -> "Node":  # noqa
+    def zip(self) -> "Node[NodeData, EdgeData] | None":
         """Zip up to the root and return it."""
         bubble = self
 

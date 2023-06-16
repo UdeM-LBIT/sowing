@@ -1,17 +1,21 @@
-from typing import Hashable, Iterable, Self, overload
+from typing import Generic, Hashable, Iterable, Self, TypeVar, overload
 from dataclasses import dataclass, replace, field
 from .util.dataclasses import repr_default
 from .zipper import Zipper
 
 
+NodeData = TypeVar("NodeData", bound=Hashable)
+EdgeData = TypeVar("EdgeData", bound=Hashable)
+
+
 @repr_default
 @dataclass(frozen=True, slots=True)
-class Edge:
+class Edge(Generic[EdgeData]):
     # Node at end of edge
     node: "Node"
 
     # Arbitrary data attached to this edge
-    data: Hashable = None
+    data: EdgeData | None = None
 
     def replace(self, **kwargs) -> Self:
         return replace(self, **kwargs)
@@ -19,12 +23,12 @@ class Edge:
 
 @repr_default
 @dataclass(frozen=True, slots=True)
-class Node:
+class Node(Generic[NodeData, EdgeData]):
     # Arbitrary data attached to this node
-    data: Hashable = None
+    data: NodeData | None = None
 
     # Outgoing edges towards child nodes
-    edges: tuple[Edge, ...] = ()
+    edges: tuple[Edge[EdgeData], ...] = ()
 
     # Cached hash value (to avoid needlessly traversing the whole tree)
     _hash: int = field(init=False, repr=False, compare=False, default=0)
@@ -44,7 +48,7 @@ class Node:
         node: Self,
         /,
         *,
-        data: Hashable | None = None,
+        data: EdgeData | None = None,
         index: int = -1,
     ) -> Self:
         """
@@ -59,7 +63,7 @@ class Node:
         ...
 
     @overload
-    def add(self, edge: Edge, /, *, index: int = -1) -> Self:
+    def add(self, edge: Edge[EdgeData], /, *, index: int = -1) -> Self:
         """
         Add an outgoing edge to this node.
 
@@ -72,10 +76,10 @@ class Node:
 
     def add(
         self,
-        node_edge: Self | Edge,
+        node_edge: Self | Edge[EdgeData],
         /,
         *,
-        data: Hashable | None = None,
+        data: EdgeData | None = None,
         index: int = -1,
     ) -> Self:
         match node_edge:
@@ -92,7 +96,7 @@ class Node:
         after = self.edges[index:]
         return self.replace(edges=before + (edge,) + after)
 
-    def extend(self, items: Iterable[Self] | Iterable[Edge]) -> Self:
+    def extend(self, items: Iterable[Self] | Iterable[Edge[EdgeData]]) -> Self:
         """
         Attach new nodes or edges from an iterable.
 
@@ -119,6 +123,6 @@ class Node:
         after = self.edges[index + 1 :]
         return self.replace(edges=before + after)
 
-    def unzip(self) -> "Zipper":
+    def unzip(self) -> Zipper:
         """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
