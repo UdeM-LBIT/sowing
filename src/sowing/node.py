@@ -10,9 +10,9 @@ EdgeData = TypeVar("EdgeData", bound=Hashable)
 
 @repr_default
 @dataclass(frozen=True, slots=True)
-class Edge(Generic[EdgeData]):
+class Edge(Generic[NodeData, EdgeData]):
     # Node at end of edge
-    node: "Node"
+    node: "Node[NodeData, EdgeData]"
 
     # Arbitrary data attached to this edge
     data: EdgeData | None = None
@@ -28,7 +28,7 @@ class Node(Generic[NodeData, EdgeData]):
     data: NodeData | None = None
 
     # Outgoing edges towards child nodes
-    edges: tuple[Edge[EdgeData], ...] = ()
+    edges: tuple[Edge[NodeData, EdgeData], ...] = ()
 
     # Cached hash value (to avoid needlessly traversing the whole tree)
     _hash: int = field(init=False, repr=False, compare=False, default=0)
@@ -63,7 +63,7 @@ class Node(Generic[NodeData, EdgeData]):
         ...
 
     @overload
-    def add(self, edge: Edge[EdgeData], /, *, index: int = -1) -> Self:
+    def add(self, edge: Edge[NodeData, EdgeData], /, *, index: int = -1) -> Self:
         """
         Add an outgoing edge to this node.
 
@@ -76,7 +76,7 @@ class Node(Generic[NodeData, EdgeData]):
 
     def add(
         self,
-        node_edge: Self | Edge[EdgeData],
+        node_edge: Self | Edge[NodeData, EdgeData],
         /,
         *,
         data: EdgeData | None = None,
@@ -96,7 +96,10 @@ class Node(Generic[NodeData, EdgeData]):
         after = self.edges[index:]
         return self.replace(edges=before + (edge,) + after)
 
-    def extend(self, items: Iterable[Self] | Iterable[Edge[EdgeData]]) -> Self:
+    def extend(
+        self,
+        items: Iterable[Self] | Iterable[Edge[NodeData, EdgeData]],
+    ) -> Self:
         """
         Attach new nodes or edges from an iterable.
 
