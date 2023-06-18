@@ -18,6 +18,11 @@ def test_min():
                 assert rq_max(i, j) is None
 
 
+def test_empty():
+    data = RangeQuery([])
+    assert len(data.sparse_table) == 0
+
+
 def test_change_source():
     data = [8, 8, 8]
     rmq = RangeQuery(data, min)

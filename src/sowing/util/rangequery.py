@@ -34,15 +34,17 @@ class RangeQuery:
         # sparse_table[depth][i] stores the value of the function
         # on the (i, i + 2**depth) range
         self.sparse_table = [[None] * length for _ in range(levels)]
-        self.sparse_table[0] = list(data)
 
-        for depth in range(1, levels):
-            for i in range(length - 2**depth + 1):
-                left = self.sparse_table[depth - 1][i]
-                assert left is not None
-                right = self.sparse_table[depth - 1][i + 2 ** (depth - 1)]
-                assert right is not None
-                self.sparse_table[depth][i] = function(left, right)
+        if levels > 0:
+            self.sparse_table[0] = list(data)
+
+            for depth in range(1, levels):
+                for i in range(length - 2**depth + 1):
+                    left = self.sparse_table[depth - 1][i]
+                    assert left is not None
+                    right = self.sparse_table[depth - 1][i + 2 ** (depth - 1)]
+                    assert right is not None
+                    self.sparse_table[depth][i] = function(left, right)
 
         self.function = function
 

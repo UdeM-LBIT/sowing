@@ -37,6 +37,10 @@ def test_build():
 
     assert "duplicate key '0' in tree" in str(err)
 
+    empty = IndexedTree(None)
+    assert len(empty) == 0
+    assert list(empty) == []
+
 
 def test_lca():
     lookup = IndexedTree(tree)
