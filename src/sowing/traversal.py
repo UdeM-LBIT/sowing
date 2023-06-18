@@ -24,7 +24,7 @@ def _default(value: T) -> Generator[T, U | None, U | T]:
 
 
 def depth(
-    node: Node[NodeData, EdgeData],
+    node: Node[NodeData, EdgeData] | None,
     preorder: bool = False,
     reverse: bool = False,
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
@@ -37,6 +37,9 @@ def depth(
     :param reverse: pass True to reverse the order
     :returns: generator that yields nodes in the specified order
     """
+    if node is None:
+        return
+
     cursor = node.unzip()
     advance = partial(
         Zipper.prev if reverse else Zipper.next,
@@ -60,7 +63,7 @@ def depth(
 
 
 def euler(
-    node: Node[NodeData, EdgeData],
+    node: Node[NodeData, EdgeData] | None,
     reverse: bool = False,
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
@@ -70,6 +73,9 @@ def euler(
     :param reverse: pass True to reverse the order
     :returns: generator that yields nodes in the specified order
     """
+    if node is None:
+        return
+
     child = -1 if reverse else 0
     sibling = -1 if reverse else 1
     cursor = node.unzip()
@@ -94,7 +100,7 @@ def euler(
 
 
 def leaves(
-    node: Node[NodeData, EdgeData],
+    node: Node[NodeData, EdgeData] | None,
     reverse: bool = False,
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
@@ -104,6 +110,9 @@ def leaves(
     :param reverse: pass True to reverse the order
     :returns: generator that yields leaves in the specified order
     """
+    if node is None:
+        return
+
     advance = Zipper.prev if reverse else Zipper.next
     cursor = advance(node.unzip())
 
@@ -134,7 +143,11 @@ def fold(
     :param traversal: tree traversal generator
     :returns: transformed tree
     """
-    in_cursor = next(traversal)
+    try:
+        in_cursor = next(traversal)
+    except StopIteration:
+        return None
+
     cursor = cast(Zipper[Any, Any], in_cursor)
 
     try:
@@ -149,7 +162,7 @@ def fold(
 def map(
     func: Callable[[NodeData, EdgeData, int, int], tuple[OutNodeData, OutEdgeData]],
     traversal: Traversal,
-) -> Node[OutNodeData, OutEdgeData]:
+) -> Node[OutNodeData, OutEdgeData] | None:
     """
     Map values attached to nodes and edges along a given tree traversal.
 

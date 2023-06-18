@@ -18,6 +18,10 @@ def test_traverse():
     def assert_iter_eq(iterable1, iterable2):
         assert [zipper.node.data for zipper in iterable1] == list(iterable2)
 
+    assert_iter_eq(depth(None), "")
+    assert_iter_eq(euler(None), "")
+    assert_iter_eq(leaves(None), "")
+
     assert_iter_eq(depth(single), "a")
     assert_iter_eq(depth(single, reverse=True), "a")
     assert_iter_eq(depth(single, preorder=True), "a")
@@ -258,7 +262,7 @@ def test_fold_remove():
     assert traversal.fold(contract_remove, depth(before, preorder=True)) == after_pre
 
 
-def test_fold_remove_all():
+def test_fold_empty():
     before = (
         Node("a")
         .add(
@@ -275,6 +279,9 @@ def test_fold_remove_all():
 
     assert traversal.fold(remove_all, depth(before)) is None
     assert traversal.fold(remove_all, depth(before, preorder=True)) is None
+
+    result = traversal.fold(remove_all, depth(before, preorder=True))
+    assert traversal.fold(remove_all, depth(result, preorder=True)) is None
 
 
 def test_fold_reduce():
