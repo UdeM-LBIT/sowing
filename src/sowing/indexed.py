@@ -1,7 +1,9 @@
-from typing import Generic, Hashable, TypeVar
+from typing import Generic, Hashable, TypeVar, get_args
 from sowing import traversal
 from sowing.node import Node
 from .util.rangequery import RangeQuery
+from dataclasses import field, Field
+import inspect
 
 
 NodeKey = TypeVar("NodeData", bound=Hashable)
@@ -134,3 +136,38 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         Complexity: O(1).
         """
         return self.depth(key1) + self.depth(key2) - 2 * self.depth(self(key1, key2))
+
+
+def index_trees(cls):
+    """
+    Create index caches for selected tree fields in a dataclass.
+
+    This is a decorator that should be invoked before dataclass(),
+    i.e., placed after @dataclass() in the decorator list.
+
+    All fields having the "index_tree" metadata key will be turned into index
+    caches for the specified tree fields.
+    """
+    mapping = {}
+
+    for name, decl in inspect.getmembers(cls):
+        if isinstance(decl, Field) and "index_from_tree" in decl.metadata:
+            target_field = decl.metadata["index_from_tree"]
+            mapping[name] = target_field
+            setattr(cls, name, field(init=False, repr=False, compare=False))
+
+            target_type = cls.__annotations__[target_field]
+            cls.__annotations__[name] = IndexedTree[*get_args(target_type)]
+
+    if mapping:
+        orig_postinit = getattr(cls, "__post_init__", lambda self: None)
+
+        def cls_postinit(self):
+            orig_postinit(self)
+
+            for indexed, orig in mapping.items():
+                object.__setattr__(self, indexed, IndexedTree(getattr(self, orig)))
+
+        cls.__post_init__ = cls_postinit
+
+    return cls

@@ -1,6 +1,7 @@
 from sowing.node import Node as N
-from sowing.indexed import IndexedTree
+from sowing.indexed import IndexedTree, index_trees
 from sowing import traversal
+from dataclasses import dataclass, field
 import pytest
 
 
@@ -101,3 +102,37 @@ def test_level_distance():
     assert lookup.distance("4", "5") == 2
     assert lookup.distance("7", "10") == 3
     assert lookup.distance("9", "4") == 5
+
+
+def test_index_dataclass():
+    @dataclass
+    @index_trees
+    class TestIndex:
+        tree1: N[int, None]
+        tree1_index = field(metadata={"index_from_tree": "tree1"})
+
+        tree2: N[str, None]
+        index_tree2 = field(metadata={"index_from_tree": "tree2"})
+
+    assert TestIndex.__annotations__["tree1_index"] == IndexedTree[int, None]
+    assert TestIndex.__annotations__["index_tree2"] == IndexedTree[str, None]
+
+    value = TestIndex(tree1=N(42), tree2=tree)
+
+    assert isinstance(value.tree1, N)
+    assert isinstance(value.tree1_index, IndexedTree)
+    assert isinstance(value.tree2, N)
+    assert isinstance(value.index_tree2, IndexedTree)
+
+    assert value.tree1_index.root == value.tree1
+    assert value.index_tree2.root == value.tree2
+
+    assert value.tree1_index(42) == value.tree1
+    assert value.index_tree2("2") == nodes["2"]
+
+    @dataclass
+    @index_trees
+    class TestNoop:
+        tree1: N[str, None]
+
+    assert TestNoop(N("test")).tree1 == N("test")
