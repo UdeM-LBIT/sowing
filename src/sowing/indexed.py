@@ -1,4 +1,4 @@
-from typing import Generic, Hashable, TypeVar, get_args
+from typing import Generic, Hashable, Iterator, TypeVar, get_args
 from sowing import traversal
 from sowing.node import Node
 from .util.rangequery import RangeQuery
@@ -13,7 +13,7 @@ EdgeData = TypeVar("EdgeData", bound=Hashable)
 class IndexedTree(Generic[NodeKey, EdgeData]):
     """Structure for fast lookup of tree nodes by key."""
 
-    __slots__ = ["root", "_depths", "_index_by_key"]
+    __slots__ = ["root", "_depths", "_index_by_key", "_keys"]
 
     def __init__(self, root: Node[NodeKey, EdgeData]):
         """
@@ -26,17 +26,19 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         """
         self.root = root
         self._index_by_key: dict[Node[NodeKey, EdgeData] | NodeKey, int] = {}
+        self._keys: list[NodeKey] = []
 
-        keys = set()
+        key_set = set()
         depths: list[tuple[int, Node[NodeKey, EdgeData]]] = []
 
-        for cursor in traversal.depth(root):
-            if cursor.node.data in keys:
+        for cursor in traversal.depth(root, preorder=True):
+            if cursor.node.data in key_set:
                 raise RuntimeError(
                     f"duplicate key {cursor.node.data!r} in tree {root!r}"
                 )
 
-            keys.add(cursor.node.data)
+            key_set.add(cursor.node.data)
+            self._keys.append(cursor.node.data)
 
         for cursor in traversal.euler(root):
             self._index_by_key[cursor.node.data] = len(depths)
@@ -47,7 +49,7 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
 
     def __call__(self, *keys: Node[NodeKey, EdgeData] | NodeKey) -> Node:
         """
-        Locate a node by a key or a collection of keys.
+        Locate a node by its key or a collection of keys.
 
         Complexity: O(n), the number of arguments.
 
@@ -69,6 +71,21 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         result = self._depths(start, end + 1)
         assert result is not None
         return result[1]
+
+    def __getitem__(self, key: Node[NodeKey, EdgeData] | NodeKey) -> Node:
+        """Locate a node by its key."""
+        return self(key)
+
+    def __contains__(self, key: Node[NodeKey, EdgeData] | NodeKey) -> bool:
+        return key in self._index_by_key
+
+    def __len__(self) -> int:
+        """Get the number of nodes in the tree."""
+        return len(self._keys)
+
+    def __iter__(self) -> Iterator[NodeKey]:
+        """Iterate through the keys of all nodes in the tree."""
+        return iter(self._keys)
 
     def is_ancestor_of(
         self,

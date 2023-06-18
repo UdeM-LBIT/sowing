@@ -19,11 +19,18 @@ def test_build():
 
     for key, node in nodes.items():
         assert lookup(key) == node
+        assert lookup[key] == node
+        assert key in lookup
+
+    assert "11" not in lookup
 
     with pytest.raises(KeyError) as err:
         lookup("11")
 
     assert "11" in str(err)
+
+    assert len(lookup) == 11
+    assert list(lookup) == ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
 
     with pytest.raises(RuntimeError) as err:
         IndexedTree(N("0").add(N("0")))
