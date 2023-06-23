@@ -1,5 +1,6 @@
 from typing import Generic, Hashable, Iterable, Self, TypeVar, overload
 from dataclasses import dataclass, replace, field
+from collections.abc import Mapping
 from .util.dataclasses import repr_default
 from .zipper import Zipper
 
@@ -129,3 +130,46 @@ class Node(Generic[NodeData, EdgeData]):
     def unzip(self) -> Zipper:
         """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
+
+    def __str__(
+        self,
+        prefix: str = "",
+        chars: dict[str, str] = {
+            "root": "┐",
+            "branch": "╭",
+            "init": "├──",
+            "cont": "│  ",
+            "init_last": "└──",
+            "cont_last": "   ",
+        },
+    ) -> str:
+        """Create a human-readable representation of this subtree."""
+        if self.data is None:
+            result = [chars["root"]] if self.edges else [""]
+        elif isinstance(self.data, Mapping):
+            result = [str(dict(self.data))]
+        else:
+            result = [str(self.data)]
+
+        init = chars["init"]
+        cont = chars["cont"]
+
+        for index, edge in enumerate(self.edges):
+            if isinstance(edge.data, Mapping):
+                branch = str(dict(edge.data))
+            elif edge.data is not None:
+                branch = str(edge.data)
+            else:
+                branch = ""
+
+            if branch:
+                result.append(prefix + cont + chars["branch"] + branch)
+
+            if index + 1 == len(self.edges):
+                init = chars["init_last"]
+                cont = chars["cont_last"]
+
+            subtree = edge.node.__str__(prefix=prefix + cont, chars=chars)
+            result.append(prefix + init + subtree)
+
+        return "\n".join(result)

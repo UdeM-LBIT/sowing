@@ -1,4 +1,5 @@
 from sowing.node import Node, Edge
+from immutables import Map
 
 
 def test_add_node():
@@ -138,3 +139,47 @@ def test_hash_collisions():
         seen.add(hash(Node(index)))
 
     assert len(seen) == repeats
+
+
+def test_str():
+    ascii_chars = {
+        "root": ".",
+        "branch": "/",
+        "init": "+--",
+        "cont": "|  ",
+        "init_last": "\\--",
+        "cont_last": "   ",
+    }
+
+    assert str(Node()) == ""
+    assert str(Node(1)) == "1"
+    assert str(Node(Map({"x": 42}))) == "{'x': 42}"
+    assert str(Node().add(Node()).add(Node())) == "┐\n├──\n└──"
+    assert Node().add(Node()).add(Node()).__str__(chars=ascii_chars) == ".\n+--\n\\--"
+    assert (
+        str(Node(1).add(Node(2).add(Node(3)).add(Node(4))).add(Node(5).add(Node(6))))
+        == "1\n├──2\n│  ├──3\n│  └──4\n└──5\n   └──6"
+    )
+    assert (
+        Node(1)
+        .add(Node(2).add(Node(3)).add(Node(4)))
+        .add(Node(5).add(Node(6)))
+        .__str__(chars=ascii_chars)
+        == "1\n+--2\n|  +--3\n|  \\--4\n\\--5\n   \\--6"
+    )
+
+    assert (
+        str(
+            Node(1)
+            .add(Node(2).add(Node(3)).add(Node(4)), data="st")
+            .add(Node(5).add(Node(6), data="ab"), data="xy")
+        )
+        == "1\n│  ╭st\n├──2\n│  ├──3\n│  └──4\n│  ╭xy\n└──5\n   │  ╭ab\n   └──6"
+    )
+    assert (
+        Node(1)
+        .add(Node(2).add(Node(3)).add(Node(4)), data="st")
+        .add(Node(5).add(Node(6), data="ab"), data="xy")
+        .__str__(chars=ascii_chars)
+        == "1\n|  /st\n+--2\n|  +--3\n|  \\--4\n|  /xy\n\\--5\n   |  /ab\n   \\--6"
+    )
