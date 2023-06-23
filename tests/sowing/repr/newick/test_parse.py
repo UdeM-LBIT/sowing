@@ -1,5 +1,5 @@
 from sowing.node import Node, Edge
-from sowphy import newick
+from sowing.repr import newick
 from immutables import Map
 import pytest
 
