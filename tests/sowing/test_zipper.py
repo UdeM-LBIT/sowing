@@ -40,7 +40,7 @@ def test_empty():
         zipper = Zipper(Node("a"), parent=Zipper())
         zipper.zip()
 
-    assert "cannot attach to empty parent zipper" in str(err)
+    assert "cannot attach to empty parent zipper" in str(err.value)
 
     assert Zipper(parent=Zipper()).sibling() == Zipper(parent=Zipper())
     assert Zipper(parent=Zipper()).sibling(offset=0) == Zipper(parent=Zipper())
@@ -101,10 +101,10 @@ def test_zipper_up_down_sibling():
     assert zipper.down().down().up().up() == zipper
     assert zipper.down().down().up().up().depth == 0
 
-    with pytest.raises(IndexError) as error:
+    with pytest.raises(IndexError) as err:
         zipper.up()
 
-    assert "cannot go up" in str(error)
+    assert "cannot go up" in str(err.value)
 
     assert zipper.down(0).sibling(0) == zipper.down(0)
     assert zipper.down(1).sibling(-1) == zipper.down(0)

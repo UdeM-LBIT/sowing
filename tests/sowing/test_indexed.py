@@ -27,7 +27,7 @@ def test_build():
     with pytest.raises(KeyError) as err:
         lookup("11")
 
-    assert "11" in str(err)
+    assert "11" in str(err.value)
 
     assert len(lookup) == 11
     assert list(lookup) == ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
@@ -35,7 +35,7 @@ def test_build():
     with pytest.raises(RuntimeError) as err:
         IndexedTree(N("0").add(N("0")))
 
-    assert "duplicate key '0' in tree" in str(err)
+    assert "duplicate key '0' in tree" in str(err.value)
 
     empty = IndexedTree(None)
     assert len(empty) == 0
@@ -58,7 +58,7 @@ def test_lca():
     with pytest.raises(TypeError) as err:
         lookup()
 
-    assert "at least one node is needed" in str(err)
+    assert "at least one node is needed" in str(err.value)
 
 
 def test_ancestor_relation():

@@ -125,77 +125,77 @@ def test_props_beast():
 
 
 def test_tokenize_error():
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("()'unclosed;")
 
-    assert "unclosed string" in str(error.value)
-    assert error.value.start == 2
-    assert error.value.end == 12
+    assert "unclosed string" in str(err.value)
+    assert err.value.start == 2
+    assert err.value.end == 12
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("()[[];")
 
-    assert "unclosed comment" in str(error.value)
-    assert error.value.start == 2
-    assert error.value.end == 6
+    assert "unclosed comment" in str(err.value)
+    assert err.value.start == 2
+    assert err.value.end == 6
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("()][];")
 
-    assert "unexpected ']'" in str(error.value)
-    assert error.value.start == 2
-    assert error.value.end == 3
+    assert "unexpected ']'" in str(err.value)
+    assert err.value.start == 2
+    assert err.value.end == 3
 
 
 def test_grammar_error():
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("")
 
-    assert "expected ';' after end of tree, not 'end'" in str(error.value)
-    assert error.value.start == 0
-    assert error.value.end == 0
+    assert "expected ';' after end of tree, not 'end'" in str(err.value)
+    assert err.value.start == 0
+    assert err.value.end == 0
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse(")")
 
-    assert "expected ';' after end of tree, not ')'" in str(error.value)
-    assert error.value.start == 0
-    assert error.value.end == 1
+    assert "expected ';' after end of tree, not ')'" in str(err.value)
+    assert err.value.start == 0
+    assert err.value.end == 1
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse(";abcdef")
 
-    assert "unexpected garbage after end of tree" in str(error.value)
-    assert error.value.start == 1
-    assert error.value.end == 7
+    assert "unexpected garbage after end of tree" in str(err.value)
+    assert err.value.start == 1
+    assert err.value.end == 7
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("(abcd());")
 
-    assert "unexpected token '(' after node" in str(error.value)
-    assert error.value.start == 5
-    assert error.value.end == 6
+    assert "unexpected token '(' after node" in str(err.value)
+    assert err.value.start == 5
+    assert err.value.end == 6
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("(node[&&NHX:=value]")
 
-    assert "expected 'string', not '='" in str(error.value)
-    assert error.value.start == 12
-    assert error.value.end == 13
+    assert "expected 'string', not '='" in str(err.value)
+    assert err.value.start == 12
+    assert err.value.end == 13
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("(node[&test,=]")
 
-    assert "expected '=', not ','" in str(error.value)
-    assert error.value.start == 11
-    assert error.value.end == 12
+    assert "expected '=', not ','" in str(err.value)
+    assert err.value.start == 11
+    assert err.value.end == 12
 
-    with pytest.raises(newick.ParseError) as error:
+    with pytest.raises(newick.ParseError) as err:
         newick.parse("(node[&test=,=]")
 
-    assert "expected ']', not '='" in str(error.value)
-    assert error.value.start == 13
-    assert error.value.end == 14
+    assert "expected ']', not '='" in str(err.value)
+    assert err.value.start == 13
+    assert err.value.end == 14
 
 
 def test_phylip():
