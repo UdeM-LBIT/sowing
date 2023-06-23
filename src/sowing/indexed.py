@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Generic, Hashable, Iterator, TypeVar, get_args
 from sowing import traversal
 from sowing.node import Node
@@ -6,16 +7,16 @@ from dataclasses import field, Field
 import inspect
 
 
-NodeKey = TypeVar("NodeData", bound=Hashable)
+NodeData = TypeVar("NodeData", bound=Hashable)
 EdgeData = TypeVar("EdgeData", bound=Hashable)
 
 
-class IndexedTree(Generic[NodeKey, EdgeData]):
+class IndexedTree(Generic[NodeData, EdgeData]):
     """Structure for fast lookup of tree nodes by key."""
 
-    __slots__ = ["root", "_depths", "_index_by_key", "_keys"]
+    __slots__ = ["root", "_depths", "_node_to_index", "_key_to_node"]
 
-    def __init__(self, root: Node[NodeKey, EdgeData]):
+    def __init__(self, root: Node[NodeData, EdgeData]):
         """
         Initialize an indexed tree.
 
@@ -25,29 +26,31 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         :raises: if any two nodes share the same key
         """
         self.root = root
-        self._index_by_key: dict[Node[NodeKey, EdgeData] | NodeKey, int] = {}
-        self._keys: list[NodeKey] = []
 
-        key_set = set()
-        depths: list[tuple[int, Node[NodeKey, EdgeData]]] = []
+        depths: list[tuple[int, Node[NodeData, EdgeData]]] = []
+        self._node_to_index: dict[Node[NodeData, EdgeData], int] = {}
+        self._key_to_node: dict[str, Node[NodeData, EdgeData]] = {}
 
         for cursor in traversal.depth(root, preorder=True):
-            if cursor.node.data in key_set:
-                raise RuntimeError(
-                    f"duplicate key {cursor.node.data!r} in tree {root!r}"
-                )
+            if isinstance(cursor.node.data, Mapping):
+                key = cursor.node.data.get("name", "")
+            elif isinstance(cursor.node.data, str):
+                key = cursor.node.data
+            else:
+                key = ""
 
-            key_set.add(cursor.node.data)
-            self._keys.append(cursor.node.data)
+            if cursor.node.data in self._key_to_node:
+                raise RuntimeError(f"duplicate key {key!r} in tree {root!r}")
+
+            self._key_to_node[key] = cursor.node
 
         for cursor in traversal.euler(root):
-            self._index_by_key[cursor.node.data] = len(depths)
-            self._index_by_key[cursor.node] = len(depths)
+            self._node_to_index[cursor.node] = len(depths)
             depths.append((cursor.depth, cursor.node))
 
         self._depths = RangeQuery(depths, min)
 
-    def __call__(self, *keys: Node[NodeKey, EdgeData] | NodeKey) -> Node:
+    def __call__(self, *keys: Node[NodeData, EdgeData] | str) -> Node:
         """
         Locate a node by its key or a collection of keys.
 
@@ -62,35 +65,41 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         if not keys:
             raise TypeError("at least one node is needed")
 
-        start = end = self._index_by_key[keys[0]]
+        start = end = self._node_to_index[self[keys[0]]]
 
         for key in keys[1:]:
-            start = min(start, self._index_by_key[key])
-            end = max(end, self._index_by_key[key])
+            index = self._node_to_index[self[key]]
+            start = min(start, index)
+            end = max(end, index)
 
         result = self._depths(start, end + 1)
         assert result is not None
         return result[1]
 
-    def __getitem__(self, key: Node[NodeKey, EdgeData] | NodeKey) -> Node:
+    def __getitem__(
+        self, key: Node[NodeData, EdgeData] | str
+    ) -> Node[NodeData, EdgeData]:
         """Locate a node by its key."""
-        return self(key)
+        if isinstance(key, str):
+            return self._key_to_node[key]
 
-    def __contains__(self, key: Node[NodeKey, EdgeData] | NodeKey) -> bool:
-        return key in self._index_by_key
+        return key
+
+    def __contains__(self, key: Node[NodeData, EdgeData] | str) -> bool:
+        return key in self._key_to_node or key in self._node_to_index
 
     def __len__(self) -> int:
         """Get the number of nodes in the tree."""
-        return len(self._keys)
+        return len(self._key_to_node)
 
-    def __iter__(self) -> Iterator[NodeKey]:
+    def __iter__(self) -> Iterator[NodeData]:
         """Iterate through the keys of all nodes in the tree."""
-        return iter(self._keys)
+        return iter(self._key_to_node)
 
     def is_ancestor_of(
         self,
-        key1: Node[NodeKey, EdgeData] | NodeKey,
-        key2: Node[NodeKey, EdgeData] | NodeKey,
+        key1: Node[NodeData, EdgeData] | NodeData,
+        key2: Node[NodeData, EdgeData] | NodeData,
     ) -> bool:
         """
         Check whether a node is an ancestor of another.
@@ -104,8 +113,8 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
 
     def is_strict_ancestor_of(
         self,
-        key1: Node[NodeKey, EdgeData] | NodeKey,
-        key2: Node[NodeKey, EdgeData] | NodeKey,
+        key1: Node[NodeData, EdgeData] | NodeData,
+        key2: Node[NodeData, EdgeData] | NodeData,
     ) -> bool:
         """
         Check whether a node is a strict an ancestor of another
@@ -120,8 +129,8 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
 
     def is_comparable(
         self,
-        key1: Node[NodeKey, EdgeData] | NodeKey,
-        key2: Node[NodeKey, EdgeData] | NodeKey,
+        key1: Node[NodeData, EdgeData] | NodeData,
+        key2: Node[NodeData, EdgeData] | NodeData,
     ) -> bool:
         """
         Check whether two nodes are in the same subtree.
@@ -133,19 +142,19 @@ class IndexedTree(Generic[NodeKey, EdgeData]):
         """
         return self.is_ancestor_of(key1, key2) or self.is_ancestor_of(key2, key1)
 
-    def depth(self, key: Node[NodeKey, EdgeData] | NodeKey) -> int:
+    def depth(self, key: Node[NodeData, EdgeData] | NodeData) -> int:
         """
         Find the depth of a node.
 
         Complexity: O(1).
         """
-        index = self._index_by_key[key]
+        index = self._node_to_index[self[key]]
         return self._depths(index, index + 1)[0]
 
     def distance(
         self,
-        key1: Node[NodeKey, EdgeData] | NodeKey,
-        key2: Node[NodeKey, EdgeData] | NodeKey,
+        key1: Node[NodeData, EdgeData] | NodeData,
+        key2: Node[NodeData, EdgeData] | NodeData,
     ) -> int:
         """
         Compute the number of edges on the shortest path between two nodes.
