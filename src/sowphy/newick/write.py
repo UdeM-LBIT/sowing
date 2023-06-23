@@ -1,7 +1,7 @@
+from immutables import Map
 from sowing.node import Node
 from sowing.zipper import Zipper
 from sowing import traversal
-from ..clade import Clade, Branch, Map
 
 
 def quote_string(data: str) -> str:
@@ -12,6 +12,9 @@ def quote_string(data: str) -> str:
 
 
 def write_props(props: Map) -> str:
+    if not props:
+        return ""
+
     return (
         "[&"
         + ",".join(
@@ -22,7 +25,7 @@ def write_props(props: Map) -> str:
     )
 
 
-def write_node(cursor: Zipper[Clade | None, Branch | None]) -> Zipper[str, None]:
+def write_node(cursor: Zipper[Map | None, Map | None]) -> Zipper[str, None]:
     node = cursor.node
     branch = cursor.data
 
@@ -33,25 +36,25 @@ def write_node(cursor: Zipper[Clade | None, Branch | None]) -> Zipper[str, None]
 
     clade = node.data
 
-    if isinstance(clade, Clade):
-        data += quote_string(clade.name)
+    if isinstance(clade, Map):
+        if "name" in clade:
+            data += quote_string(clade["name"])
+            clade = clade.delete("name")
 
-        if clade.props:
-            data += write_props(clade.props)
+        data += write_props(clade)
 
-    if isinstance(branch, Branch):
-        if branch.length is not None or branch.props:
-            data += ":"
+    if isinstance(branch, Map) and branch:
+        data += ":"
 
-        if branch.length is not None:
-            data += f"{str(branch.length)}"
+        if "length" in branch:
+            data += f"{branch['length']}"
+            branch = branch.delete("length")
 
-        if branch.props:
-            data += write_props(branch.props)
+        data += write_props(branch)
 
     return cursor.replace(node=Node(data), data=None)
 
 
-def write(root: Node[Clade | None, Branch | None]) -> str:
+def write(root: Node[Map | None, Map | None]) -> str:
     """Encode a tree into a Newick string."""
     return traversal.fold(write_node, traversal.depth(root)).data + ";"

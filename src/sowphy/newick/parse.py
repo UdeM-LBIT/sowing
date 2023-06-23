@@ -2,8 +2,8 @@ from typing import Any, Iterator
 from collections import deque
 from enum import Enum, auto
 from dataclasses import dataclass
+from immutables import Map
 from sowing.node import Node
-from ..clade import Clade, Branch, Map
 
 
 class ParseError(Exception):
@@ -339,7 +339,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
         match state:
             case ParseState.NodeStart:
                 # Start parsing a new node
-                nodes.append(Node(Clade()))
+                nodes.append(Node())
 
                 if (token := next(tokens)).kind == TokenKind.OpenParen:
                     state = ParseState.NodeStart
@@ -349,39 +349,32 @@ def parse_chain(data: str) -> tuple[Node, int]:
 
             case ParseState.NodeData:
                 # Parse metadata attached to a node
-                clade = Clade()
-                branch = Branch()
+                clade = Map()
+                branch = Map()
 
                 # Parse node label
                 if (token := next(tokens)).kind == TokenKind.String:
-                    clade = clade.replace(name=token.value)
+                    clade = clade.set("name", token.value)
                 else:
                     tokens.push(token)
 
                 # Parse node props
-                clade = clade.replace(props=_parse_props(tokens))
+                clade = clade.update(_parse_props(tokens))
 
                 if (token := next(tokens)).kind == TokenKind.Colon:
                     # Parse branch length
                     if (token := next(tokens)).kind == TokenKind.String:
-                        try:
-                            branch = branch.replace(length=float(token.value))
-                        except ValueError:
-                            raise ParseError(
-                                f"invalid branch length value '{token.value}'",
-                                token.start,
-                                token.end,
-                            )
+                        branch = branch.set("length", token.value)
                     else:
                         tokens.push(token)
 
                     # Parse branch props
-                    branch = branch.replace(props=_parse_props(tokens))
+                    branch = branch.update(_parse_props(tokens))
                 else:
                     tokens.push(token)
 
                 active = nodes.pop()
-                active = active.replace(data=clade)
+                active = active.replace(data=clade or None)
 
                 if not nodes:
                     # Finished parsing the root node
@@ -390,7 +383,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
                 else:
                     # Attach parsed node to its parent
                     parent = nodes.pop()
-                    nodes.append(parent.add(active, data=branch))
+                    nodes.append(parent.add(active, data=branch or None))
 
                     match (token := next(tokens)).kind:
                         case TokenKind.Comma:
@@ -418,7 +411,7 @@ def parse_chain(data: str) -> tuple[Node, int]:
     return nodes.pop(), token.end
 
 
-def parse(data: str) -> Node[Clade, Branch]:
+def parse(data: str) -> Node[Map, Map]:
     """Parse a single tree encoded as a Newick string."""
     node, pos = parse_chain(data)
 
@@ -428,7 +421,7 @@ def parse(data: str) -> Node[Clade, Branch]:
     return node
 
 
-def parse_all(data: str) -> list[Node[Clade, Branch]]:
+def parse_all(data: str) -> list[Node[Map, Map]]:
     """Parse a sequence of trees encoded as Newick strings."""
     result = []
 

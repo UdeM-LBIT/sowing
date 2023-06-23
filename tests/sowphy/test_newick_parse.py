@@ -1,128 +1,126 @@
 from sowing.node import Node, Edge
 from sowphy import newick
-from sowphy.clade import Clade, Branch
 from immutables import Map
 import pytest
 
 
 def test_topology():
-    empty = Node(Clade())
-    empty_branch = Edge(empty, Branch())
-    assert newick.parse(";") == empty
-    assert newick.parse("(,);") == empty.add(empty_branch).add(empty_branch)
+    assert newick.parse(";") == Node()
+    assert newick.parse("(,);") == Node().add(Edge(Node())).add(Edge(Node()))
     assert newick.parse("((),(,,),);") == (
-        empty.add(empty.add(empty_branch), data=Branch())
-        .add(empty.add(empty_branch).add(empty_branch).add(empty_branch), data=Branch())
-        .add(empty_branch)
+        Node()
+        .add(Node().add(Edge(Node())))
+        .add(Node().add(Edge(Node())).add(Edge(Node())).add(Edge(Node())))
+        .add(Edge(Node()))
     )
 
 
 def test_name():
-    assert newick.parse("label;") == Node(Clade("label"))
-    assert newick.parse("a_b_c;") == Node(Clade("a b c"))
-    assert newick.parse("'a b c';") == Node(Clade("a b c"))
-    assert newick.parse("'quote''quote';") == Node(Clade("quote'quote"))
+    assert newick.parse("label;") == Node(Map({"name": "label"}))
+    assert newick.parse("a_b_c;") == Node(Map({"name": "a b c"}))
+    assert newick.parse("'a b c';") == Node(Map({"name": "a b c"}))
+    assert newick.parse("'quote''quote';") == Node(Map({"name": "quote'quote"}))
     assert newick.parse("(left,right)root;") == (
-        Node(Clade("root"))
-        .add(Node(Clade("left")), data=Branch())
-        .add(Node(Clade("right")), data=Branch())
+        Node(Map({"name": "root"}))
+        .add(Node(Map({"name": "left"})))
+        .add(Node(Map({"name": "right"})))
     )
 
 
 def test_length():
-    assert newick.parse(":42;") == Node(Clade(""))
+    assert newick.parse(":42;") == Node()
     assert newick.parse("(left:42,right:24)root;") == (
-        Node(Clade("root"))
-        .add(Node(Clade("left")), data=Branch(42))
-        .add(Node(Clade("right")), data=Branch(24))
+        Node(Map({"name": "root"}))
+        .add(Node(Map({"name": "left"})), data=Map({"length": "42"}))
+        .add(Node(Map({"name": "right"})), data=Map({"length": "24"}))
     )
     assert newick.parse("(left:1.23,right:3.21)root;") == (
-        Node(Clade("root"))
-        .add(Node(Clade("left")), data=Branch(1.23))
-        .add(Node(Clade("right")), data=Branch(3.21))
+        Node(Map({"name": "root"}))
+        .add(Node(Map({"name": "left"})), data=Map({"length": "1.23"}))
+        .add(Node(Map({"name": "right"})), data=Map({"length": "3.21"}))
     )
 
 
 def test_comments():
     assert newick.parse("(left[comment1],right[comment2])root[comment3];") == (
-        Node(Clade("root"))
-        .add(Node(Clade("left")), data=Branch())
-        .add(Node(Clade("right")), data=Branch())
+        Node(Map({"name": "root"}))
+        .add(Node(Map({"name": "left"})))
+        .add(Node(Map({"name": "right"})))
     )
-    assert newick.parse("root[abc[nested[third]]];") == Node(Clade("root"))
+    assert newick.parse("root[abc[nested[third]]];") == Node(Map({"name": "root"}))
 
 
 def test_props_nhx():
-    assert newick.parse("a[&&NHX];") == (Node(Clade("a", Map({}))))
+    assert newick.parse("a[&&NHX];") == (Node(Map({"name": "a"})))
     assert newick.parse("a[&&NHX:S=human:E=1.1.1.1];") == (
-        Node(Clade("a", Map({"S": "human", "E": "1.1.1.1"})))
+        Node(Map({"name": "a", "S": "human", "E": "1.1.1.1"}))
     )
     assert newick.parse("a[&&NHX:S={}:E=()];") == (
-        Node(Clade("a", Map({"S": "{}", "E": "()"})))
+        Node(Map({"name": "a", "S": "{}", "E": "()"}))
     )
     assert newick.parse("a[&&NHX:S=[abc]:E=];") == (
-        Node(Clade("a", Map({"S": "", "E": ""})))
+        Node(Map({"name": "a", "S": "", "E": ""}))
     )
     assert newick.parse("(a[&&NHX:S=:E=]:12);") == (
-        Node(Clade()).add(
-            Node(Clade("a", Map({"S": "", "E": ""}))),
-            data=Branch(12),
+        Node().add(
+            Node(Map({"name": "a", "S": "", "E": ""})),
+            data=Map({"length": "12"}),
         )
     )
     assert newick.parse("(a:12[&&NHX:S=:E=]);") == (
-        Node(Clade()).add(
-            Node(Clade("a")),
-            data=Branch(12, Map({"S": "", "E": ""})),
+        Node().add(
+            Node(Map({"name": "a"})),
+            data=Map({"length": "12", "S": "", "E": ""}),
         )
     )
     assert newick.parse("(a:[&&NHX:S=:E=]);") == (
-        Node(Clade()).add(
-            Node(Clade("a")),
-            data=Branch(props=Map({"S": "", "E": ""})),
+        Node().add(
+            Node(Map({"name": "a"})),
+            data=Map({"S": "", "E": ""}),
         )
     )
     assert newick.parse("a[&&NHX:'quote'':=arg'='quote=:''value'];") == (
-        Node(Clade("a", Map({"quote':=arg": "quote=:'value"})))
+        Node(Map({"name": "a", "quote':=arg": "quote=:'value"}))
     )
 
 
 def test_props_beast():
-    assert newick.parse("a[&];") == (Node(Clade("a", Map({}))))
+    assert newick.parse("a[&];") == Node(Map({"name": "a"}))
     assert newick.parse("a[&height=100.0,colour={red}];") == (
-        Node(Clade("a", Map({"height": "100.0", "colour": "{red}"})))
+        Node(Map({"name": "a", "height": "100.0", "colour": "{red}"}))
     )
     assert newick.parse("a[&height=100.0,colour={red},];") == (
-        Node(Clade("a", Map({"height": "100.0", "colour": "{red}"})))
+        Node(Map({"name": "a", "height": "100.0", "colour": "{red}"}))
     )
     assert newick.parse("a[&height=[],colour=];") == (
-        Node(Clade("a", Map({"height": "", "colour": ""})))
+        Node(Map({"name": "a", "height": "", "colour": ""}))
     )
     assert newick.parse("a[&height=[],colour=,];") == (
-        Node(Clade("a", Map({"height": "", "colour": ""})))
+        Node(Map({"name": "a", "height": "", "colour": ""}))
     )
     assert newick.parse("a[&height={},colour=(),test=[]];") == (
-        Node(Clade("a", Map({"height": "{}", "colour": "()", "test": ""})))
+        Node(Map({"name": "a", "height": "{}", "colour": "()", "test": ""}))
     )
     assert newick.parse("(a[&s=,e=]:12);") == (
-        Node(Clade()).add(
-            Node(Clade("a", Map({"s": "", "e": ""}))),
-            data=Branch(12),
+        Node().add(
+            Node(Map({"name": "a", "s": "", "e": ""})),
+            data=Map({"length": "12"}),
         )
     )
     assert newick.parse("(a:12[&s=,e=]);") == (
-        Node(Clade()).add(
-            Node(Clade("a")),
-            data=Branch(12, Map({"s": "", "e": ""})),
+        Node().add(
+            Node(Map({"name": "a"})),
+            data=Map({"length": "12", "s": "", "e": ""}),
         )
     )
     assert newick.parse("(a:[&s=,e=]);") == (
-        Node(Clade()).add(
-            Node(Clade("a")),
-            data=Branch(props=Map({"s": "", "e": ""})),
+        Node().add(
+            Node(Map({"name": "a"})),
+            data=Map({"s": "", "e": ""}),
         )
     )
     assert newick.parse("a[&'quote'':=arg'='quote=:''value',];") == (
-        Node(Clade("a", Map({"quote':=arg": "quote=:'value"})))
+        Node(Map({"name": "a", "quote':=arg": "quote=:'value"}))
     )
 
 
@@ -172,13 +170,6 @@ def test_grammar_error():
     assert error.value.end == 7
 
     with pytest.raises(newick.ParseError) as error:
-        newick.parse(":abcd;")
-
-    assert "invalid branch length value 'abcd'" in str(error.value)
-    assert error.value.start == 1
-    assert error.value.end == 5
-
-    with pytest.raises(newick.ParseError) as error:
         newick.parse("(abcd());")
 
     assert "unexpected token '(' after node" in str(error.value)
@@ -212,16 +203,16 @@ def test_phylip():
     # <https://evolution.genetics.washington.edu/phylip/newicktree.html>
 
     assert newick.parse("(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);") == (
-        Node(Clade(""))
-        .add(Node(Clade("B")), data=Branch(6))
+        Node()
+        .add(Node(Map({"name": "B"})), data=Map({"length": "6.0"}))
         .add(
-            Node(Clade(""))
-            .add(Node(Clade("A")), data=Branch(5))
-            .add(Node(Clade("C")), data=Branch(3))
-            .add(Node(Clade("E")), data=Branch(4)),
-            data=Branch(5),
+            Node()
+            .add(Node(Map({"name": "A"})), data=Map({"length": "5.0"}))
+            .add(Node(Map({"name": "C"})), data=Map({"length": "3.0"}))
+            .add(Node(Map({"name": "E"})), data=Map({"length": "4.0"})),
+            data=Map({"length": "5.0"}),
         )
-        .add(Node(Clade("D")), data=Branch(11))
+        .add(Node(Map({"name": "D"})), data=Map({"length": "11.0"}))
     )
 
     assert (
@@ -239,34 +230,44 @@ def test_phylip():
         );"""
         )
         == (
-            Node(Clade(""))
+            Node()
             .add(
-                Node(Clade(""))
-                .add(Node(Clade("raccoon")), data=Branch(19.19959))
-                .add(Node(Clade("bear")), data=Branch(6.80041)),
-                data=Branch(0.84600),
+                Node()
+                .add(Node(Map({"name": "raccoon"})), data=Map({"length": "19.19959"}))
+                .add(Node(Map({"name": "bear"})), data=Map({"length": "6.80041"})),
+                data=Map({"length": "0.84600"}),
             )
             .add(
-                Node(Clade(""))
+                Node()
                 .add(
-                    Node(Clade(""))
-                    .add(Node(Clade("sea lion")), data=Branch(11.99700))
-                    .add(Node(Clade("seal")), data=Branch(12.00300)),
-                    data=Branch(7.52973),
+                    Node()
+                    .add(
+                        Node(Map({"name": "sea lion"})),
+                        data=Map({"length": "11.99700"}),
+                    )
+                    .add(Node(Map({"name": "seal"})), data=Map({"length": "12.00300"})),
+                    data=Map({"length": "7.52973"}),
                 )
                 .add(
-                    Node(Clade(""))
+                    Node()
                     .add(
-                        Node(Clade(""))
-                        .add(Node(Clade("monkey")), data=Branch(100.85930))
-                        .add(Node(Clade("cat")), data=Branch(47.14069)),
-                        data=Branch(20.59201),
+                        Node()
+                        .add(
+                            Node(Map({"name": "monkey"})),
+                            data=Map({"length": "100.85930"}),
+                        )
+                        .add(
+                            Node(Map({"name": "cat"})), data=Map({"length": "47.14069"})
+                        ),
+                        data=Map({"length": "20.59201"}),
                     )
-                    .add(Node(Clade("weasel")), data=Branch(18.87953)),
-                    data=Branch(2.09460),
+                    .add(
+                        Node(Map({"name": "weasel"})), data=Map({"length": "18.87953"})
+                    ),
+                    data=Map({"length": "2.09460"}),
                 ),
-                data=Branch(3.87382),
+                data=Map({"length": "3.87382"}),
             )
-            .add(Node(Clade("dog")), data=Branch(25.46154))
+            .add(Node(Map({"name": "dog"})), data=Map({"length": "25.46154"}))
         )
     )
