@@ -39,7 +39,7 @@ class IndexedTree(Generic[NodeData, EdgeData]):
             else:
                 key = ""
 
-            if cursor.node.data in self._key_to_node:
+            if key in self._key_to_node:
                 raise RuntimeError(f"duplicate key {key!r} in tree {root!r}")
 
             self._key_to_node[key] = cursor.node

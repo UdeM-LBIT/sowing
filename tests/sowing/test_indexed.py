@@ -64,6 +64,11 @@ def test_build():
 
         assert "duplicate key '0' in tree" in str(err.value)
 
+        with pytest.raises(RuntimeError) as err:
+            IndexedTree(N(Map({"name": "0"})).add(N(Map({"name": "0"}))))
+
+        assert "duplicate key '0' in tree" in str(err.value)
+
         empty = IndexedTree(None)
         assert len(empty) == 0
         assert list(empty) == []
