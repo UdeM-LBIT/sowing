@@ -90,6 +90,9 @@ class Node(Generic[NodeData, EdgeData]):
             case Edge():
                 edge = node_edge
 
+            case _:
+                raise TypeError(f"cannot add object of type {type(node_edge)}")
+
         if index == -1:
             index = len(self.edges)
 
@@ -99,7 +102,7 @@ class Node(Generic[NodeData, EdgeData]):
 
     def extend(
         self,
-        items: Iterable[Self] | Iterable[Edge[NodeData, EdgeData]],
+        items: Iterable[Self | Edge[NodeData, EdgeData]],
     ) -> Self:
         """
         Attach new nodes or edges from an iterable.

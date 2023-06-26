@@ -1,5 +1,6 @@
 from sowing.node import Node, Edge
 from immutables import Map
+import pytest
 
 
 def test_add_node():
@@ -15,6 +16,11 @@ def test_add_node():
 
     root = Node("a").add(left, data="b").add(right, data="c", index=0)
     assert root.edges == (Edge(right, "c"), Edge(left, "b"))
+
+    with pytest.raises(TypeError) as err:
+        root.add(Map())
+
+    assert f"cannot add object of type {type(Map())}" in str(err.value)
 
 
 def test_add_edge():
