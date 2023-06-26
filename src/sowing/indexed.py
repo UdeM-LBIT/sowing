@@ -34,6 +34,8 @@ class IndexedTree(Generic[NodeData, EdgeData]):
         for cursor in traversal.depth(root, preorder=True):
             if isinstance(cursor.node.data, Mapping):
                 key = cursor.node.data.get("name", "")
+            elif hasattr(cursor.node.data, "name"):
+                key = getattr(cursor.node.data, "name")
             elif isinstance(cursor.node.data, str):
                 key = cursor.node.data
             else:
