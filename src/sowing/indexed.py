@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Generic, Hashable, Iterator, TypeVar, get_args
+from typing import Generic, Hashable, Iterator, Iterable, TypeVar, get_args
 from sowing import traversal
 from sowing.node import Node
 from .util.rangequery import RangeQuery
@@ -97,6 +97,12 @@ class IndexedTree(Generic[NodeData, EdgeData]):
     def __iter__(self) -> Iterator[NodeData]:
         """Iterate through the keys of all nodes in the tree."""
         return iter(self._key_to_node)
+
+    def keys(self) -> Iterable[Node[NodeData, EdgeData]]:
+        return self._key_to_node.keys()
+
+    def values(self) -> Iterable[Node[NodeData, EdgeData]]:
+        return self._key_to_node.values()
 
     def is_ancestor_of(
         self,
