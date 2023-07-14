@@ -13,7 +13,7 @@ tree_1 = (
 )
 
 
-nodes_1 = {cursor.node.data: cursor.node for cursor in traversal.depth(tree_1)}
+nodes_1 = {cursor.node.data: cursor for cursor in traversal.depth(tree_1)}
 
 
 tree_2 = (
@@ -34,7 +34,7 @@ tree_2 = (
 )
 
 
-nodes_2 = {cursor.node.data["name"]: cursor.node for cursor in traversal.depth(tree_2)}
+nodes_2 = {cursor.node.data["name"]: cursor for cursor in traversal.depth(tree_2)}
 
 
 def test_build():
@@ -170,7 +170,7 @@ def test_index_dataclass():
     assert value.tree1_index.root == value.tree1
     assert value.index_tree2.root == value.tree2
 
-    assert value.tree1_index("42") == value.tree1
+    assert value.tree1_index("42") == value.tree1.unzip()
     assert value.index_tree2("2") == nodes_1["2"]
 
     @dataclass
