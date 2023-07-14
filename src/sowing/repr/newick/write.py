@@ -5,7 +5,7 @@ from sowing import traversal
 
 
 def quote_string(data: str) -> str:
-    if any(char in "(),:;='\t\n" for char in data):
+    if any(char in "[](),:;='\t\n" for char in data):
         return "'" + data.replace("'", "''") + "'"
 
     return data.replace(" ", "_")

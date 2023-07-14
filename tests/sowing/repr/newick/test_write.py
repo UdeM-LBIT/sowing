@@ -22,6 +22,8 @@ def test_name():
     assert newick.write(Node(Map({"name": "a b c"}))) == "a_b_c;"
     assert newick.write(Node(Map({"name": "a\tb\tc"}))) == "'a\tb\tc';"
     assert newick.write(Node(Map({"name": "quote'quote"}))) == "'quote''quote';"
+    assert newick.write(Node(Map({"name": "(nosubtree)"}))) == "'(nosubtree)';"
+    assert newick.write(Node(Map({"name": "[nocomment]"}))) == "'[nocomment]';"
     assert (
         newick.write(
             Node(Map({"name": "root"}))
