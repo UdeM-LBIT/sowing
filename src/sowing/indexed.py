@@ -112,10 +112,10 @@ class IndexedTree(Generic[NodeData, EdgeData]):
         return iter(self._key_to_cursor)
 
     def keys(self) -> Iterable[Node[NodeData, EdgeData]]:
-        return self._key_to_node.keys()
+        return self._key_to_cursor.keys()
 
     def values(self) -> Iterable[Node[NodeData, EdgeData]]:
-        return self._key_to_node.values()
+        return self._key_to_cursor.values()
 
     def is_ancestor_of(self, key1: TreeElement, key2: TreeElement) -> bool:
         """

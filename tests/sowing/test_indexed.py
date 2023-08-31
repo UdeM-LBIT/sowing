@@ -57,7 +57,10 @@ def test_build():
         assert "11" in str(err.value)
 
         assert len(lookup) == 11
-        assert list(lookup) == ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        keys = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        assert list(lookup) == keys
+        assert list(lookup.keys()) == keys
+        assert list(lookup.values()) == [lookup[key] for key in keys]
 
         with pytest.raises(RuntimeError) as err:
             IndexedTree(N("0").add(N("0")))
