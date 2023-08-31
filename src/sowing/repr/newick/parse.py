@@ -166,8 +166,7 @@ def tokenize(data: str) -> Iterator[Token]:
     nhx_start = TokenKind.OpenPropsNHX
     beast_start = TokenKind.OpenPropsBEAST
 
-    while pos < len(data):
-        pos = _lex_whitespace(data, pos)
+    while (pos := _lex_whitespace(data, pos)) < len(data):
         cur = data[pos]
 
         match state:

@@ -156,6 +156,13 @@ def test_grammar_error():
     assert err.value.end == 0
 
     with pytest.raises(newick.ParseError) as err:
+        newick.parse(" ")
+
+    assert "expected ';' after end of tree, not 'end'" in str(err.value)
+    assert err.value.start == 1
+    assert err.value.end == 1
+
+    with pytest.raises(newick.ParseError) as err:
         newick.parse(")")
 
     assert "expected ';' after end of tree, not ')'" in str(err.value)
