@@ -39,7 +39,14 @@ def get_key(element: TreeElement) -> TreeKey:
 class IndexedTree(Generic[NodeData, EdgeData]):
     """Structure for fast querying of tree nodes by key."""
 
-    __slots__ = ["root", "_depths", "_cursor_to_index", "_key_to_cursor"]
+    __slots__ = [
+        "root",
+        "_depths",
+        "_to_index",
+        "_to_cursor",
+        "_all_keys",
+        "_all_cursors",
+    ]
 
     def __init__(self, root: Node[NodeData, EdgeData]):
         """
@@ -50,29 +57,39 @@ class IndexedTree(Generic[NodeData, EdgeData]):
         :param root: root of the input tree to index on
         :raises: if any two nodes share the same key
         """
-        self.root = root
-
-        depths: list[tuple[int, Zipper[NodeData, EdgeData]]] = []
-        self._cursor_to_index: dict[Zipper[NodeData, EdgeData], int] = {}
-        self._key_to_cursor: dict[str, Zipper[NodeData, EdgeData]] = {}
+        to_cursor: dict[str, Zipper[NodeData, EdgeData]] = {}
+        all_keys: list[str] = []
+        all_cursors: list[Zipper[NodeData, EdgeData]] = []
 
         for cursor in traversal.depth(root, preorder=True):
             key = get_key(cursor)
 
-            if key in self._key_to_cursor:
+            if key in to_cursor:
                 raise RuntimeError(f"duplicate key {key!r} in tree {root!r}")
 
-            self._key_to_cursor[key] = cursor
+            to_cursor[cursor] = cursor
+            to_cursor[key] = cursor
+            all_cursors.append(cursor)
+            all_keys.append(key)
+
+        to_index: dict[Zipper[NodeData, EdgeData], int] = {}
+        depths: list[tuple[int, Zipper[NodeData, EdgeData]]] = []
 
         for cursor in traversal.euler(root):
-            self._cursor_to_index[cursor] = len(depths)
+            to_index[cursor] = len(depths)
+            to_index[get_key(cursor)] = len(depths)
             depths.append((cursor.depth, cursor))
 
+        self.root = root
+        self._to_cursor = to_cursor
+        self._to_index = to_index
         self._depths = RangeQuery(depths, min)
+        self._all_keys = all_keys
+        self._all_cursors = all_cursors
 
     def __call__(self, *keys: TreeElement) -> Zipper[NodeData, EdgeData]:
         """
-        Locate a node by its key or a collection of keys.
+        Locate a node by its key or the lowest common ancestor of a collection of keys.
 
         Complexity: O(n), the number of arguments.
 
@@ -85,10 +102,10 @@ class IndexedTree(Generic[NodeData, EdgeData]):
         if not keys:
             raise TypeError("at least one node is needed")
 
-        start = end = self._cursor_to_index[self[keys[0]]]
+        start = end = self._to_index[keys[0]]
 
         for key in keys[1:]:
-            index = self._cursor_to_index[self[key]]
+            index = self._to_index[key]
             start = min(start, index)
             end = max(end, index)
 
@@ -98,24 +115,24 @@ class IndexedTree(Generic[NodeData, EdgeData]):
 
     def __getitem__(self, key: TreeElement) -> Zipper[NodeData, EdgeData]:
         """Locate a tree position by its key."""
-        return self._key_to_cursor[get_key(key)]
+        return self._to_cursor[key]
 
     def __contains__(self, key: TreeElement) -> bool:
-        return get_key(key) in self._key_to_cursor
+        return key in self._to_cursor
 
     def __len__(self) -> int:
         """Get the number of nodes in the tree."""
-        return len(self._key_to_cursor)
+        return len(self._all_keys)
 
     def __iter__(self) -> Iterator[NodeData]:
         """Iterate through the keys of all nodes in the tree."""
-        return iter(self._key_to_cursor)
+        return iter(self._all_keys)
 
     def keys(self) -> Iterable[Node[NodeData, EdgeData]]:
-        return self._key_to_cursor.keys()
+        return self._all_keys
 
-    def values(self) -> Iterable[Node[NodeData, EdgeData]]:
-        return self._key_to_cursor.values()
+    def values(self) -> Iterable[Zipper[NodeData, EdgeData]]:
+        return self._all_cursors
 
     def is_ancestor_of(self, key1: TreeElement, key2: TreeElement) -> bool:
         """
@@ -157,7 +174,7 @@ class IndexedTree(Generic[NodeData, EdgeData]):
 
         Complexity: O(1).
         """
-        index = self._cursor_to_index[self[key]]
+        index = self._to_index[self[key]]
         return self._depths(index, index + 1)[0]
 
     def distance(self, key1: TreeElement, key2: TreeElement) -> int:
