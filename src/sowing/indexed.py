@@ -128,11 +128,14 @@ class IndexedTree(Generic[NodeData, EdgeData]):
         """Iterate through the keys of all nodes in the tree."""
         return iter(self._all_keys)
 
-    def keys(self) -> Iterable[Node[NodeData, EdgeData]]:
+    def keys(self) -> Iterable[str]:
         return self._all_keys
 
     def values(self) -> Iterable[Zipper[NodeData, EdgeData]]:
         return self._all_cursors
+
+    def items(self) -> Iterable[tuple[str, Zipper[NodeData, EdgeData]]]:
+        return zip(self._all_keys, self._all_cursors)
 
     def is_ancestor_of(self, key1: TreeElement, key2: TreeElement) -> bool:
         """
