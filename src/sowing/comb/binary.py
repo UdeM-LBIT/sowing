@@ -9,7 +9,7 @@ def is_binary(root: Node) -> bool:
     return all(len(cursor.node.edges) in (0, 2) for cursor in traversal.depth(root))
 
 
-def binarize_at(root: Node) -> Iterable[Node]:
+def binarize_at(root: Node, default: Node = Node()) -> Iterable[Node]:
     """
     Generate all possible binarizations of a node.
 
@@ -20,6 +20,7 @@ def binarize_at(root: Node) -> Iterable[Node]:
     are isomorphic up to children reorderings are only generated once.
 
     :param root: original node
+    :param default: value used for each new node (default: empty node)
     :returns: iterates through all possible binarizations
     """
     if len(root.edges) <= 2:
@@ -37,15 +38,15 @@ def binarize_at(root: Node) -> Iterable[Node]:
         if sum(right_muls) == 0 or left_muls < right_muls:
             continue
 
-        left_fan = Node()
-        right_fan = Node()
+        left_fan = default
+        right_fan = default
 
         for edge, left_mul, right_mul in zip(edges.keys(), left_muls, right_muls):
             left_fan = left_fan.extend((edge,) * left_mul)
             right_fan = right_fan.extend((edge,) * right_mul)
 
-        left_bin = binarize_at(left_fan)
-        right_bin = binarize_at(right_fan)
+        left_bin = binarize_at(left_fan, default)
+        right_bin = binarize_at(right_fan, default)
 
         if left_muls == right_muls:
             options = combinations_with_replacement(left_bin, r=2)
@@ -60,7 +61,7 @@ def binarize_at(root: Node) -> Iterable[Node]:
             )
 
 
-def binarize(root: Node) -> Iterable[Node]:
+def binarize(root: Node, default: Node = Node()) -> Iterable[Node]:
     """
     Generate all possible binarizations of a tree.
 
@@ -73,15 +74,17 @@ def binarize(root: Node) -> Iterable[Node]:
     reorderings are only generated once.
 
     :param root: original tree
+    :param default: value used for each new node (default: empty node)
     :returns: iterates through all possible binarizations
     """
     head = root.replace(edges=())
     children = [edge.node for edge in root.edges]
     edge_data = [edge.data for edge in root.edges]
 
-    for bin_children in product(*map(binarize, children)):
+    for bin_children in product(*(binarize(child, default) for child in children)):
         yield from binarize_at(
-            head.extend(
+            root=head.extend(
                 (Edge(node, data) for node, data in zip(bin_children, edge_data))
-            )
+            ),
+            default=default,
         )
