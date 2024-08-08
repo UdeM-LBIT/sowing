@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from collections.abc import Set
 from .. import traversal
 from ..node import Node
+from ..zipper import Zipper
 from ..util.partition import Partition
 
 
@@ -40,7 +42,7 @@ def breakup(root: Node) -> tuple[list[Node], list[Triple], list[Fan]]:
     triples = []
     fans = []
 
-    def extract_parts(cursor):
+    def extract_parts(cursor: Zipper) -> Zipper:
         children = tuple(edge.node for edge in cursor.node.edges)
 
         if cursor.is_leaf() or not all(
@@ -160,3 +162,26 @@ def supertree(*trees: Node) -> Node | None:
         all_fans.update(dict.fromkeys(fans))
 
     return build(all_leaves.keys(), all_triples.keys(), all_fans.keys())
+
+
+def display(root: Node, leaves: Set[Node]) -> Node | None:
+    """
+    Extract the smallest minor containing the given leaves of a tree.
+
+    :param root: input tree to be filtered
+    :param leaves: set of leaves to keep
+    :returns: filtered tree
+    """
+
+    def filter_tree(cursor: Zipper) -> Zipper:
+        node = cursor.node
+
+        if cursor.is_leaf() and node not in leaves:
+            return cursor.replace(node=None)
+
+        if len(node.edges) == 1:
+            return cursor.replace(node=node.edges[0].node)
+
+        return cursor
+
+    return traversal.fold(filter_tree, traversal.depth(root))

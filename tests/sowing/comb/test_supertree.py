@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.comb.supertree import Triple, Fan, breakup, build, supertree
+from sowing.comb.supertree import Triple, Fan, breakup, build, supertree, display
 
 
 def test_breakup():
@@ -203,9 +203,62 @@ def test_supertree():
         Node()
         .add(Node().add(Node("a")).add(Node("b")))
         .add(Node().add(Node("c")).add(Node("e"))),
-        Node().add(Node("d")).add(Node().add(Node("c")).add(Node("e"))),
+        Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d")),
     ) == (
         Node()
         .add(Node().add(Node("a")).add(Node("b")))
         .add(Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d")))
     )
+
+
+def test_display():
+    assert display(
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("d")).add(Node("e"))),
+        {Node("a"), Node("b"), Node("c"), Node("d")},
+    ) == (
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("d")))
+    )
+
+    assert display(
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("d")).add(Node("e"))),
+        {Node("a"), Node("b"), Node("c"), Node("e")},
+    ) == (
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("e")))
+    )
+
+    assert display(
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d"))),
+        {Node("a"), Node("b"), Node("c"), Node("d")},
+    ) == (
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("d")))
+    )
+
+    assert display(
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d"))),
+        {Node("a"), Node("b"), Node("c"), Node("e")},
+    ) == (
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node("c")).add(Node("e")))
+    )
+
+    assert display(
+        Node()
+        .add(Node().add(Node("a")).add(Node("b")))
+        .add(Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d"))),
+        {Node("d"), Node("c"), Node("e")},
+    ) == Node().add(Node().add(Node("c")).add(Node("e"))).add(Node("d"))
