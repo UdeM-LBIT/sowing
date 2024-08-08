@@ -144,15 +144,20 @@ class Node(Generic[NodeData, EdgeData]):
             "cont": "│  ",
             "init_last": "└──",
             "cont_last": "   ",
+            "highlight": "○ ",
         },
+        highlight: Self | None = None,
     ) -> str:
         """Create a human-readable representation of this subtree."""
         if self.data is None:
-            result = [chars["root"]] if self.edges else [""]
+            result = [chars["root"]] if self.edges and not self == highlight else [""]
         elif isinstance(self.data, Mapping):
             result = [str(dict(self.data))]
         else:
             result = [str(self.data)]
+
+        if self == highlight:
+            result[0] = chars["highlight"] + result[0]
 
         init = chars["init"]
         cont = chars["cont"]
@@ -172,7 +177,9 @@ class Node(Generic[NodeData, EdgeData]):
                 init = chars["init_last"]
                 cont = chars["cont_last"]
 
-            subtree = edge.node.__str__(prefix=prefix + cont, chars=chars)
+            subtree = edge.node.__str__(
+                prefix=prefix + cont, chars=chars, highlight=highlight
+            )
             result.append(prefix + init + subtree)
 
         return "\n".join(result)

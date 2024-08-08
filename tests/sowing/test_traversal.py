@@ -300,7 +300,7 @@ def test_fold_reduce():
     def reduce(zipper):
         node = zipper.node
 
-        if type(node.data) == int:
+        if isinstance(node.data, int):
             return zipper
 
         args = map(lambda edge: edge.node.data, node.edges)

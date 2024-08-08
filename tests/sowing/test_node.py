@@ -155,6 +155,7 @@ def test_str():
         "cont": "|  ",
         "init_last": "\\--",
         "cont_last": "   ",
+        "highlight": "x ",
     }
 
     assert str(Node()) == ""

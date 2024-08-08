@@ -1,5 +1,6 @@
 from typing import Generic, Hashable, Self, TypeVar, TYPE_CHECKING
 from dataclasses import dataclass, replace
+from inspect import signature
 from .util.dataclasses import repr_default
 
 
@@ -186,3 +187,15 @@ class Zipper(Generic[NodeData, EdgeData]):
             bubble = bubble.up()
 
         return bubble.node
+
+    def __str__(
+        self,
+        prefix: str = "",
+        chars: dict[str, str] | None = None,
+    ) -> str:
+        tree = self.zip()
+
+        if chars is None:
+            chars = signature(tree.__str__).parameters["chars"].default
+
+        return self.zip().__str__(prefix=prefix, chars=chars, highlight=self.node)

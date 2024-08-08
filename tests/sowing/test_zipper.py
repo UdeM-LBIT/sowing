@@ -211,3 +211,26 @@ def test_zipper_next_prev():
     assert (zipper := zipper.prev(preorder=True)).node.data == "c"
     assert (zipper := zipper.prev(preorder=True)).node.data == "b"
     assert (zipper := zipper.prev(preorder=True)).node == root
+
+
+def test_str():
+    ascii_chars = {
+        "root": ".",
+        "branch": "/",
+        "init": "+--",
+        "cont": "|  ",
+        "init_last": "\\--",
+        "cont_last": "   ",
+        "highlight": "x ",
+    }
+
+    root = Node(1).add(Node(2).add(Node(3)).add(Node(4))).add(Node(5).add(Node(6)))
+    cursor = root.unzip()
+
+    assert str(cursor) == "○ 1\n├──2\n│  ├──3\n│  └──4\n└──5\n   └──6"
+    assert str(cursor.down()) == "1\n├──○ 2\n│  ├──3\n│  └──4\n└──5\n   └──6"
+    assert str(cursor.down(1)) == "1\n├──2\n│  ├──3\n│  └──4\n└──○ 5\n   └──6"
+    assert (
+        cursor.__str__(chars=ascii_chars)
+        == "x 1\n+--2\n|  +--3\n|  \\--4\n\\--5\n   \\--6"
+    )
