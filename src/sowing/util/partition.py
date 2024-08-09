@@ -39,12 +39,11 @@ class Partition(Generic[Item]):
         """
         merged = False
 
-        if not items:
+        if len(items) <= 1:
             return False
 
-        root1 = self.find(items[0])
-
-        for item2 in items:
+        for item2 in items[1:]:
+            root1 = self.find(items[0])
             root2 = self.find(item2)
 
             if root1 == root2:

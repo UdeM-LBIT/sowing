@@ -64,6 +64,14 @@ def test_partition_node():
     assert uf.find(Node("g")) == Node("e")
 
 
+def test_union_multiple():
+    uf = Partition("abc")
+    assert not uf.union("b")
+    assert uf.union("b", "c")
+    assert uf.union("a", "b", "c")
+    assert len(uf) == 1
+
+
 def test_repr():
     uf = Partition(range(4))
     assert repr(uf) == "Partition([[0], [1], [2], [3]])"
