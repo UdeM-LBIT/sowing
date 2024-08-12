@@ -8,7 +8,7 @@ Item = TypeVar("Item")
 class Partition(Generic[Item]):
     """Partition structure implementing the union-find strategy."""
 
-    def __init__(self, items: Iterable[Item]):
+    def __init__(self, items: Iterable[Item] = ()):
         """Create a partition in which each item is in its own set."""
         self._parent = {item: item for item in items}
         self._rank = {item: 0 for item in self._parent}

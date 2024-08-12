@@ -4,6 +4,11 @@ from sowing.util.partition import Partition
 
 
 def test_partition_int():
+def test_empty():
+    uf = Partition()
+    assert len(uf) == 0
+
+
     uf = Partition(range(13))
     assert len(uf) == 13
 
