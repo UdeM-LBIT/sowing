@@ -18,6 +18,7 @@ def test_topology():
 
 
 def test_name():
+    assert newick.write(Node(Map({"name": ""}))) == ";"
     assert newick.write(Node(Map({"name": "label"}))) == "label;"
     assert newick.write(Node(Map({"name": "a b c"}))) == "a_b_c;"
     assert newick.write(Node(Map({"name": "a_b_c"}))) == "'a_b_c';"
@@ -35,8 +36,15 @@ def test_name():
     )
 
 
-def test_length():
-    assert newick.write(Node(Map({"name": ""}))) == ";"
+def test_length_support_probability():
+    assert (
+        newick.write(
+            Node(Map({"name": "root"}))
+            .add(Node(Map({"name": "left"})), data=Map({}))
+            .add(Node(Map({"name": "right"})), data=Map({}))
+        )
+        == "(left,right)root;"
+    )
     assert (
         newick.write(
             Node(Map({"name": "root"}))
@@ -52,6 +60,57 @@ def test_length():
             .add(Node(Map({"name": "right"})), data=Map({"length": 3.21}))
         )
         == "(left:1.23,right:3.21)root;"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Map({"name": "1"})),
+                data=Map({"length": 2, "support": 3}),
+            )
+        )
+        == "(1:2:3);"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Map({"name": "1"})),
+                data=Map({"length": 2, "support": 3, "probability": 4}),
+            )
+        )
+        == "(1:2:3:4);"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Map({"name": "1"})),
+                data=Map({"length": 2, "probability": 4}),
+            )
+        )
+        == "(1:2::4);"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Map({"name": "1"})),
+                data=Map({"support": 3}),
+            )
+        )
+        == "(1::3);"
+    )
+    assert (
+        newick.write(
+            Node().add(
+                Node(Map({"name": "1"})),
+                data=Map({"support": 3, "probability": 4}),
+            )
+        )
+        == "(1::3:4);"
+    )
+    assert (
+        newick.write(
+            Node().add(Node(Map({"name": "1"})), data=Map({"probability": "4"}))
+        )
+        == "(1:::4);"
     )
 
 

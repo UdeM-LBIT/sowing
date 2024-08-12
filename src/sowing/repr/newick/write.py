@@ -44,13 +44,23 @@ def write_node(cursor: Zipper[Map | None, Map | None]) -> Zipper[str, None]:
         data += write_props(clade)
 
     if isinstance(branch, Map) and branch:
-        data += ":"
+        colon_props = []
 
-        if "length" in branch:
-            data += f"{branch['length']}"
-            branch = branch.delete("length")
+        for key in ("length", "support", "probability"):
+            if key in branch:
+                colon_props.append(str(branch[key]))
+                branch = branch.delete(key)
+            else:
+                colon_props.append("")
 
-        data += write_props(branch)
+        while colon_props[-1] == "":
+            colon_props.pop()
+
+        other_props = write_props(branch)
+        all_props = ":".join(colon_props) + other_props
+
+        if all_props:
+            data += ":" + all_props
 
     return cursor.replace(node=Node(data), data=None)
 

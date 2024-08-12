@@ -27,7 +27,7 @@ def test_name():
     )
 
 
-def test_length():
+def test_length_support_probability():
     assert newick.parse(":42;") == Node()
     assert newick.parse("(left:42,right:24)root;") == (
         Node(Map({"name": "root"}))
@@ -38,6 +38,39 @@ def test_length():
         Node(Map({"name": "root"}))
         .add(Node(Map({"name": "left"})), data=Map({"length": "1.23"}))
         .add(Node(Map({"name": "right"})), data=Map({"length": "3.21"}))
+    )
+    assert newick.parse("(1:2:3);") == (
+        Node().add(
+            Node(Map({"name": "1"})),
+            data=Map({"length": "2", "support": "3"}),
+        )
+    )
+    assert newick.parse("(1:2:3:4);") == (
+        Node().add(
+            Node(Map({"name": "1"})),
+            data=Map({"length": "2", "support": "3", "probability": "4"}),
+        )
+    )
+    assert newick.parse("(1:2::4);") == (
+        Node().add(
+            Node(Map({"name": "1"})),
+            data=Map({"length": "2", "probability": "4"}),
+        )
+    )
+    assert newick.parse("(1::3);") == (
+        Node().add(
+            Node(Map({"name": "1"})),
+            data=Map({"support": "3"}),
+        )
+    )
+    assert newick.parse("(1::3:4);") == (
+        Node().add(
+            Node(Map({"name": "1"})),
+            data=Map({"support": "3", "probability": "4"}),
+        )
+    )
+    assert newick.parse("(1:::4);") == (
+        Node().add(Node(Map({"name": "1"})), data=Map({"probability": "4"}))
     )
 
 

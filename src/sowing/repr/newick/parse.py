@@ -239,6 +239,15 @@ class TokenIterator:
         if token.kind != kind:
             self.push(token)
 
+    def extract(self, kind: TokenKind) -> Token | None:
+        """Extract the next token if it is of given type, or push it back otherwise."""
+        token = next(self)
+
+        if token.kind == kind:
+            return token
+
+        self.push(token)
+
     def expect(self, kind: TokenKind) -> Token:
         """Ensure the next token is of given type and return it."""
         token = next(self)
@@ -270,19 +279,17 @@ def _parse_props_nhx(tokens: TokenIterator) -> Map:
     """Parse a block of Newick properties in NHX format."""
     result = {}
 
-    while (token := next(tokens)).kind == TokenKind.Colon:
+    while tokens.extract(TokenKind.Colon) is not None:
         key = tokens.expect(TokenKind.String).value
         tokens.expect(TokenKind.Equals)
 
-        if (token := next(tokens)).kind == TokenKind.String:
+        if (token := tokens.extract(TokenKind.String)) is not None:
             value = token.value
         else:
-            tokens.push(token)
             value = ""
 
         result[key] = value
 
-    tokens.push(token)
     tokens.expect(TokenKind.CloseProps)
     return Map(result)
 
@@ -291,20 +298,18 @@ def _parse_props_beast(tokens: TokenIterator) -> Map:
     """Parse a block of Newick properties in BEAST format."""
     result = {}
 
-    while (token := next(tokens)).kind == TokenKind.String:
+    while (token := tokens.extract(TokenKind.String)) is not None:
         key = token.value
         tokens.expect(TokenKind.Equals)
 
-        if (token := next(tokens)).kind == TokenKind.String:
+        if (token := tokens.extract(TokenKind.String)) is not None:
             value = token.value
         else:
-            tokens.push(token)
             value = ""
 
         result[key] = value
         tokens.skip(TokenKind.Comma)
 
-    tokens.push(token)
     tokens.expect(TokenKind.CloseProps)
     return Map(result)
 
@@ -340,10 +345,9 @@ def parse_chain(data: str) -> tuple[Node, int]:
                 # Start parsing a new node
                 nodes.append(Node())
 
-                if (token := next(tokens)).kind == TokenKind.OpenParen:
+                if tokens.extract(TokenKind.OpenParen) is not None:
                     state = ParseState.NodeStart
                 else:
-                    tokens.push(token)
                     state = ParseState.NodeData
 
             case ParseState.NodeData:
@@ -352,25 +356,29 @@ def parse_chain(data: str) -> tuple[Node, int]:
                 branch = Map()
 
                 # Parse node label
-                if (token := next(tokens)).kind == TokenKind.String:
+                if (token := tokens.extract(TokenKind.String)) is not None:
                     clade = clade.set("name", token.value)
-                else:
-                    tokens.push(token)
 
                 # Parse node props
                 clade = clade.update(_parse_props(tokens))
 
-                if (token := next(tokens)).kind == TokenKind.Colon:
+                if tokens.extract(TokenKind.Colon) is not None:
                     # Parse branch length
-                    if (token := next(tokens)).kind == TokenKind.String:
+                    if (token := tokens.extract(TokenKind.String)) is not None:
                         branch = branch.set("length", token.value)
-                    else:
-                        tokens.push(token)
 
-                    # Parse branch props
+                    # Parse branch support
+                    if tokens.extract(TokenKind.Colon) is not None:
+                        if (token := tokens.extract(TokenKind.String)) is not None:
+                            branch = branch.set("support", token.value)
+
+                    # Parse branch probability
+                    if tokens.extract(TokenKind.Colon) is not None:
+                        if (token := tokens.extract(TokenKind.String)) is not None:
+                            branch = branch.set("probability", token.value)
+
+                    # Parse other branch props
                     branch = branch.update(_parse_props(tokens))
-                else:
-                    tokens.push(token)
 
                 active = nodes.pop()
                 active = active.replace(data=clade or None)
