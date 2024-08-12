@@ -146,3 +146,47 @@ def test_repr():
         "Node(data='a'): [Node(data='a'), Node(data='b')], "
         "Node(data='c'): [Node(data='c'), Node(data='d')]})"
     )
+
+
+def test_eq():
+    assert Partition() == Partition()
+
+    a = Partition([1, 2, 3])
+    b = Partition([1, 2, 3])
+    c = Partition([2, 3, 4])
+
+    assert a == b
+
+    a.union(1, 2)
+    b.union(1, 2)
+
+    assert a == b
+    assert a != c
+    assert b != c
+
+    b.union(2, 3)
+    assert a != b
+
+
+def test_merge():
+    empty = Partition()
+    assert list(empty.merge()) == [empty]
+
+    one = Partition([0])
+    assert list(one.merge()) == [one]
+
+    two = Partition(range(2))
+    two_merges = [two.copy(), two.copy()]
+    two_merges[1].union(0, 1)
+
+    assert list(two.merge()) == two_merges
+
+    three = Partition(range(3))
+    three_merges = [three.copy() for _ in range(5)]
+
+    three_merges[1].union(1, 2)
+    three_merges[2].union(0, 1)
+    three_merges[3].union(0, 2)
+    three_merges[4].union(0, 1, 2)
+
+    assert list(three.merge()) == three_merges

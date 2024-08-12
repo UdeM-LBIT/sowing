@@ -1,9 +1,50 @@
-from collections import defaultdict
-from typing import TypeVar, Generic, Iterable
+from typing import TypeVar, Generic, Iterable, Self, Generator
+from itertools import chain, combinations
 from copy import deepcopy
 
 
 Item = TypeVar("Item")
+
+
+def powerset(iterable: Iterable[Item]) -> Generator[tuple[Item], None, None]:
+    """Generate all subsets of a given sequence."""
+    seq = list(iterable)
+    return chain.from_iterable(
+        combinations(seq, r=size) for size in range(len(seq) + 1)
+    )
+
+
+def groupings(
+    iterable: Iterable[Item], size: int = 0
+) -> Generator[tuple[tuple[Item]], None, None]:
+    """
+    Generate all ways to partition a sequence of elements.
+
+    :param iterable: sequence of elements to partition
+    :param size: number of subsets in the generated partitions,
+        or 0 to generate partitions of any size
+    :yields: possible partitions, starting with the largest ones
+    """
+    seq = tuple(iterable)
+
+    if not seq:
+        if size <= 0:
+            yield ()
+
+        return
+
+    if size == 1:
+        yield (seq,)
+        return
+
+    for subset in powerset(seq[1:]):
+        subset = (seq[0],) + subset
+
+        for rest in groupings(
+            iterable=(item for item in seq if item not in subset),
+            size=size - 1,
+        ):
+            yield (subset, *rest)
 
 
 class Partition(Generic[Item]):
@@ -73,6 +114,24 @@ class Partition(Generic[Item]):
 
         return merged
 
+    def merge(self, size: int = 0) -> Generator[Self, None, None]:
+        """
+        Generate all possible ways to merge groups of this partition.
+
+        The number of results for a complete partition of `n` elements
+        is `B_n`, the n-th Bell number.
+
+        :param size: number of groups in the generated partitions
+        :yields: each possible merging
+        """
+        for grouping in groupings(list(self.keys()), size=size):
+            merged = self.copy()
+
+            for group in grouping:
+                merged.union(*group)
+
+            yield merged
+
     def keys(self) -> Iterable[Item]:
         """List the group representants of this partition."""
         return self._keys.keys()
@@ -96,3 +155,6 @@ class Partition(Generic[Item]):
     def __len__(self) -> int:
         """Get the number of groups in this partition."""
         return self._count
+
+    def __eq__(self, other: Self) -> bool:
+        return dict(self.items()) == dict(other.items())
