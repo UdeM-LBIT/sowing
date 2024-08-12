@@ -77,6 +77,17 @@ def test_union_multiple():
     assert len(uf) == 1
 
 
+def test_copy():
+    first = Partition(range(3))
+    second = first.copy()
+
+    first.union(0, 1)
+    assert len(first) == 2
+    assert len(second) == 3
+    assert first.find(0) == first.find(1)
+    assert second.find(0) != second.find(1)
+
+
 def test_repr():
     uf = Partition(range(4))
     assert repr(uf) == "Partition([[0], [1], [2], [3]])"

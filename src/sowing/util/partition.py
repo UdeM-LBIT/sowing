@@ -1,5 +1,6 @@
 from collections import defaultdict
 from typing import TypeVar, Generic, Iterable
+from copy import deepcopy
 
 
 Item = TypeVar("Item")
@@ -13,6 +14,10 @@ class Partition(Generic[Item]):
         self._parent = {item: item for item in items}
         self._rank = {item: 0 for item in self._parent}
         self._count = len(self._parent)
+
+    def copy(self) -> Self:
+        """Return a copy of the partition."""
+        return deepcopy(self)
 
     def find(self, item: Item) -> Item:
         """
