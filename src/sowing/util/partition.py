@@ -11,7 +11,8 @@ class Partition(Generic[Item]):
 
     def __init__(self, items: Iterable[Item] = ()):
         """Create a partition in which each item is in its own set."""
-        self._parent = {item: item for item in items}
+        self._keys = {item: None for item in items}
+        self._parent = {item: item for item in self._keys}
         self._rank = {item: 0 for item in self._parent}
         self._count = len(self._parent)
 
@@ -57,29 +58,40 @@ class Partition(Generic[Item]):
             if self._rank[root1] == self._rank[root2]:
                 self._parent[root2] = root1
                 self._rank[root1] += 1
+                del self._keys[root2]
 
             elif self._rank[root1] > self._rank[root2]:
                 self._parent[root2] = root1
+                del self._keys[root2]
 
             else:
                 self._parent[root1] = root2
+                del self._keys[root1]
 
             self._count -= 1
             merged = True
 
         return merged
 
-    def groups(self) -> list[list[Item]]:
+    def keys(self) -> Iterable[Item]:
+        """List the group representants of this partition."""
+        return self._keys.keys()
+
+    def values(self) -> Iterable[list[Item]]:
         """List the groups of this partition."""
-        result = defaultdict(list)
+        result = {key: [] for key in self._keys}
 
         for item in self._parent:
             result[self.find(item)].append(item)
 
-        return list(result.values())
+        return result.values()
+
+    def items(self) -> Iterable[tuple[Item, list[Item]]]:
+        return zip(self.keys(), self.values())
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__qualname__}({self.groups()!r})"
+        items = ", ".join(f"{key!r}: {value!r}" for key, value in self.items())
+        return f"{self.__class__.__qualname__}({{{items}}})"
 
     def __len__(self) -> int:
         """Get the number of groups in this partition."""

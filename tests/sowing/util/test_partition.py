@@ -3,12 +3,12 @@ from sowing.node import Node
 from sowing.util.partition import Partition
 
 
-def test_partition_int():
 def test_empty():
     uf = Partition()
     assert len(uf) == 0
 
 
+def test_union_find_int():
     uf = Partition(range(13))
     assert len(uf) == 13
 
@@ -51,7 +51,7 @@ def test_empty():
     assert len(uf) == 1
 
 
-def test_partition_node():
+def test_union_find_node():
     uf = Partition(map(Node, "abcdefg"))
     assert len(uf) == 7
 
@@ -88,20 +88,61 @@ def test_copy():
     assert second.find(0) != second.find(1)
 
 
+def test_key_value_items():
+    uf = Partition(range(6))
+    assert len(uf) == 6
+    assert list(uf.keys()) == [0, 1, 2, 3, 4, 5]
+    assert list(uf.values()) == [[0], [1], [2], [3], [4], [5]]
+    assert list(uf.items()) == [
+        (0, [0]),
+        (1, [1]),
+        (2, [2]),
+        (3, [3]),
+        (4, [4]),
+        (5, [5]),
+    ]
+
+    uf.union(2, 4)
+    assert list(uf.keys()) == [0, 1, 2, 3, 5]
+    assert list(uf.values()) == [[0], [1], [2, 4], [3], [5]]
+    assert list(uf.items()) == [(0, [0]), (1, [1]), (2, [2, 4]), (3, [3]), (5, [5])]
+
+    uf.union(0, 2)
+    assert list(uf.keys()) == [1, 2, 3, 5]
+    assert list(uf.values()) == [[1], [0, 2, 4], [3], [5]]
+    assert list(uf.items()) == [(1, [1]), (2, [0, 2, 4]), (3, [3]), (5, [5])]
+
+    uf.union(1, 5)
+    assert list(uf.keys()) == [1, 2, 3]
+    assert list(uf.values()) == [[1, 5], [0, 2, 4], [3]]
+    assert list(uf.items()) == [(1, [1, 5]), (2, [0, 2, 4]), (3, [3])]
+
+    uf.union(4, 5)
+    assert list(uf.keys()) == [2, 3]
+    assert list(uf.values()) == [[0, 1, 2, 4, 5], [3]]
+    assert list(uf.items()) == [(2, [0, 1, 2, 4, 5]), (3, [3])]
+
+    uf.union(2, 3)
+    assert list(uf.keys()) == [2]
+    assert list(uf.values()) == [[0, 1, 2, 3, 4, 5]]
+    assert list(uf.items()) == [(2, [0, 1, 2, 3, 4, 5])]
+
+
 def test_repr():
     uf = Partition(range(4))
-    assert repr(uf) == "Partition([[0], [1], [2], [3]])"
+    assert repr(uf) == "Partition({0: [0], 1: [1], 2: [2], 3: [3]})"
     uf.union(0, 3)
-    assert repr(uf) == "Partition([[0, 3], [1], [2]])"
+    assert repr(uf) == "Partition({0: [0, 3], 1: [1], 2: [2]})"
     uf.union(1, 0)
-    assert repr(uf) == "Partition([[0, 1, 3], [2]])"
+    assert repr(uf) == "Partition({0: [0, 1, 3], 2: [2]})"
     uf.union(2, 0)
-    assert repr(uf) == "Partition([[0, 1, 2, 3]])"
+    assert repr(uf) == "Partition({0: [0, 1, 2, 3]})"
 
     uf = Partition(map(Node, "abcd"))
     uf.union(Node("a"), Node("b"))
     uf.union(Node("c"), Node("d"))
     assert repr(uf) == (
-        "Partition([[Node(data='a'), Node(data='b')], "
-        "[Node(data='c'), Node(data='d')]])"
+        "Partition({"
+        "Node(data='a'): [Node(data='a'), Node(data='b')], "
+        "Node(data='c'): [Node(data='c'), Node(data='d')]})"
     )
