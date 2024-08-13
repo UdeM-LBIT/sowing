@@ -72,6 +72,30 @@ class Zipper(Generic[NodeData, EdgeData]):
 
         return (self.down(index) for index in range(len(self.node.edges)))
 
+    def root(self) -> "Iterable[Zipper[NodeData, EdgeData]]":
+        """
+        Reconfigure the tree so that the pointed node is the root.
+
+        All nodes, edges and their attached data are preserved. The relative
+        node ordering is also preserved. The original tree can be restored
+        by re-rooting on the old root node.
+        """
+        if self.is_root():
+            return self
+
+        parent = self.parent.root().node
+        parent = parent.replace(
+            edges=parent.edges[self.index :] + parent.edges[: self.index]
+        )
+
+        return self.replace(
+            node=self.node.add(parent, data=self.data),
+            data=None,
+            index=-1,
+            depth=0,
+            parent=None,
+        )
+
     def is_root(self) -> bool:
         """Test whether the pointed node is a root node."""
         return self.parent is None

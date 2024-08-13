@@ -155,6 +155,68 @@ def test_children():
     assert list(Zipper().children()) == []
 
 
+def test_root():
+    root = (
+        Node()
+        .add(
+            Node()
+            .add(Node("a"), data="2")
+            .add(Node("b"), data="3")
+            .add(Node("c"), data="4"),
+            data="1",
+        )
+        .add(
+            Node()
+            .add(Node("d"), data="6")
+            .add(
+                Node()
+                .add(Node("e"), data="8")
+                .add(
+                    Node().add(Node("f"), data="10").add(Node("g"), data="11"),
+                    data="9",
+                ),
+                data="7",
+            )
+            .add(
+                Node().add(Node("h"), data="13").add(Node("i"), data="14"),
+                data="12",
+            ),
+            data="5",
+        )
+    )
+    root_789 = (
+        Node()
+        .add(Node("e"), data="8")
+        .add(
+            Node().add(Node("f"), data="10").add(Node("g"), data="11"),
+            data="9",
+        )
+        .add(
+            Node()
+            .add(
+                Node().add(Node("h"), data="13").add(Node("i"), data="14"),
+                data="12",
+            )
+            .add(
+                Node().add(
+                    Node()
+                    .add(Node("a"), data="2")
+                    .add(Node("b"), data="3")
+                    .add(Node("c"), data="4"),
+                    data="1",
+                ),
+                data="5",
+            )
+            .add(Node("d"), data="6"),
+            data="7",
+        )
+    )
+
+    assert root.unzip().root() == root.unzip()
+    assert root.unzip().down(1).down(1).root() == root_789.unzip()
+    assert root_789.unzip().down(2).down(1).root() == root.unzip()
+
+
 def test_edit():
     left = Node("b").add(Node("d").add(Node("e")))
     right = Node("c")
