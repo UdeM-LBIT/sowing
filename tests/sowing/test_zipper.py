@@ -76,7 +76,7 @@ def test_zipper_thread():
     assert root.unzip().down().down().zip() == root
 
 
-def test_zipper_up_down_sibling():
+def test_up_down_sibling():
     root = (
         Node("a")
         .add(Node("b").add(Node("d").add(Node("e"))))
@@ -131,7 +131,31 @@ def test_zipper_up_down_sibling():
     assert not zipper.down(0).sibling(2).is_last_sibling(-1)
 
 
-def test_zipper_edit():
+def test_children():
+    root = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("c"))
+        .add(Node("f").add(Node("g")).add(Node("h")))
+    )
+
+    zipper = root.unzip()
+
+    assert list(zipper.children()) == [
+        zipper.down(0),
+        zipper.down(1),
+        zipper.down(2),
+    ]
+
+    assert list(zipper.down(0).children()) == [
+        zipper.down(0).down(0),
+    ]
+
+    assert list(zipper.down(0).down(0).down(0).children()) == []
+    assert list(Zipper().children()) == []
+
+
+def test_edit():
     left = Node("b").add(Node("d").add(Node("e")))
     right = Node("c")
     root = Node("a").add(left).add(right)
@@ -151,7 +175,7 @@ def test_zipper_edit():
     assert root == Node("a").add(Node("b").add(Node("z"))).add(Node("w"))
 
 
-def test_zipper_next_prev():
+def test_next_prev():
     root = Node("a")
     zipper = root.unzip()
 

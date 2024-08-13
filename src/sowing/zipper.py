@@ -1,4 +1,5 @@
 from typing import Generic, Hashable, Self, TypeVar, TYPE_CHECKING
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from inspect import signature
 from .util.dataclasses import repr_default
@@ -63,6 +64,13 @@ class Zipper(Generic[NodeData, EdgeData]):
             index=index,
             depth=self.depth + 1,
         )
+
+    def children(self) -> "Iterable[Zipper[NodeData, EdgeData]]":
+        """Iterate through each child of the pointed node."""
+        if self.node is None:
+            return ()
+
+        return (self.down(index) for index in range(len(self.node.edges)))
 
     def is_root(self) -> bool:
         """Test whether the pointed node is a root node."""
