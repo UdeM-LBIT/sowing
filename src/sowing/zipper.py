@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 
 NodeData = TypeVar("NodeData", bound=Hashable)
 EdgeData = TypeVar("EdgeData", bound=Hashable)
-OutNodeData = TypeVar("OutNodeData", bound=Hashable)
-OutEdgeData = TypeVar("OutEdgeData", bound=Hashable)
 
 
 @repr_default
@@ -34,6 +32,17 @@ class Zipper(Generic[NodeData, EdgeData]):
     parent: "Zipper[NodeData, EdgeData] | None" = None
 
     def replace(self, **kwargs) -> Self:
+        """
+        Create a copy of the current cursor in which the attributes given
+        as keyword arguments are replaced with the specified value.
+
+        Values which are callables are invoked with the current cursor
+        to compute the actual value used for replacement.
+        """
+        for key, value in kwargs.items():
+            if callable(value):
+                kwargs[key] = value(getattr(self, key))
+
         return replace(self, **kwargs)
 
     def is_empty(self) -> bool:

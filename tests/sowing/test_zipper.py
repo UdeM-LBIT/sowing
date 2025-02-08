@@ -222,8 +222,7 @@ def test_edit():
     right = Node("c")
     root = Node("a").add(left).add(right)
 
-    zipper = root.unzip().down(1)
-    zipper = zipper.replace(node=zipper.node.replace(data="w"))
+    zipper = root.unzip().down(1).replace(node=lambda x: x.replace(data="w"))
     assert zipper.node.data == "w"
 
     root = zipper.zip()

@@ -69,9 +69,11 @@ def test_pop_replace():
     root.replace(data="w")
     assert root.data == "a"
 
-    root = root.replace(data="w")
-    assert root.data == "w"
-    root = root.replace(data="a")
+    assert root.replace(data="w").data == "w"
+    assert root.replace(data=lambda x: x + "u").data == "au"
+
+    assert Edge(root).replace(node=child1).node == child1
+    assert Edge(root).replace(node=lambda _: child1).node == child1
 
     root.add(child1)
     assert root == Node("a")

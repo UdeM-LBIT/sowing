@@ -19,6 +19,17 @@ class Edge(Generic[NodeData, EdgeData]):
     data: EdgeData | None = None
 
     def replace(self, **kwargs) -> Self:
+        """
+        Create a copy of the current edge in which the attributes given
+        as keyword arguments are replaced with the specified value.
+
+        Values which are callables are invoked with the current edge
+        to compute the actual value used for replacement.
+        """
+        for key, value in kwargs.items():
+            if callable(value):
+                kwargs[key] = value(getattr(self, key))
+
         return replace(self, **kwargs)
 
 
@@ -41,6 +52,17 @@ class Node(Generic[NodeData, EdgeData]):
         return self._hash
 
     def replace(self, **kwargs) -> Self:
+        """
+        Create a copy of the current node in which the attributes given
+        as keyword arguments are replaced with the specified value.
+
+        Values which are callables are invoked with the current node
+        to compute the actual value used for replacement.
+        """
+        for key, value in kwargs.items():
+            if callable(value):
+                kwargs[key] = value(getattr(self, key))
+
         return replace(self, **kwargs)
 
     @overload

@@ -96,7 +96,7 @@ def test_build():
     assert list(build([Node("a")], [], [])) == [Node("a")]
 
     assert list(build([Node("a"), Node("b")], [], [])) == [
-        (Node().add(Node("a")).add(Node("b")))
+        Node().add(Node("a")).add(Node("b"))
     ]
 
     assert list(build([Node("a"), Node("b"), Node("c")], [], [])) == [
