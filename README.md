@@ -15,8 +15,8 @@ This library also provides efficient tools to traverse and edit trees, despite t
 
 1. [Manually building trees](#manually-building-trees)
 1. [(De)serializing trees](#deserializing-trees)
-1. [Navigating within trees](#navigating-within-trees)
-1. [Editing trees](#editing-trees)
+1. [Navigating and editing trees using cursors](#navigating-and-editing-trees-using-cursors)
+1. [Traversals, maps, and folds](#traversals-maps-and-folds)
 1. [Indexed trees](#indexed-trees)
 1. [Combinatorial tools](#combinatorial-tools)
 
@@ -90,19 +90,19 @@ For example:
 
 ```py
 >>> tree = (
-    Node("Root")
-    .add(
-        Node("Left")
-        .add(Node("Leaf"))
-        .add(Node("Leaf")),
-        data="towards left"
-    )
-    .add(
-        Node("Right")
-        .add(Node("Leaf")),
-        data="towards right"
-    )
-)
+...     Node("Root")
+...     .add(
+...         Node("Left")
+...         .add(Node("Leaf"))
+...         .add(Node("Leaf")),
+...         data="towards left"
+...     )
+...     .add(
+...         Node("Right")
+...         .add(Node("Leaf")),
+...         data="towards right"
+...     )
+... )
 >>> print(tree)
 Root
 │  ╭towards left
@@ -174,13 +174,13 @@ Attributes placed before the first colon belong to the node, while those placed 
 While the deserialization-serialization process is guaranteed to be non-destructive (i.e. `write(parse(data))` always equals `data`), the reverse is not true (for some trees, `parse(write(tree))` differs from `tree`).
 Any non-dictionary data encountered while serializing a tree is silently ignored.
 
-### Navigating within trees
+### Navigating and editing trees using cursors
 
 `Node` and `Edge` instances have a `data` attribute containing the data attached to them.
 Additionally, each node has an `edges` attribute containing a list of edges to its children, and each edge has a `node` attribute referencing the subtree it points to.
 By design, nodes have no reference to their parents.
 
-To easily navigate within trees, use **zippers**, which are a kind of **cursor** keeping track of your position and allowing you to easily jump to the parent, children, or siblings of a node.
+To easily navigate within trees, use **cursors** (also called _zippers_) to keep track of your position inside the tree and to jump to the parent, children, or siblings of the current node.
 To obtain a cursor pointing on the root of a tree, use the `unzip()` method.
 The `node` attribute on cursors contains the currently pointed node.
 
@@ -196,10 +196,10 @@ For example:
 ```py
 >>> from sowing import Node
 >>> tree = (
-    Node("Root")
-    .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")))
-    .add(Node("Right").add(Node("Leaf")))
-)
+...     Node("Root")
+...     .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")))
+...     .add(Node("Right").add(Node("Leaf")))
+... )
 >>> print(tree)
 Root
 ├──Left
@@ -220,65 +220,14 @@ Root
    └──Leaf
 ```
 
-When printing a cursor, the circle (○) symbol marks the current node.
+When a cursor is printed, the circle (○) symbol marks the current node.
 
-The `sowing.traversal` module provides functions to traverse trees in the following orders:
-
-- `depth(tree, [preorder=False])` — Get an iterator on the nodes of a tree in [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search), either in postorder (the default), where parents get enumerated after their children, or in preorder, where parents get enumerated first.
-- `leaves()` — Get an iterator on the leaves of a tree, following the tree order.
-- `euler()` — Get an iterator visiting the nodes of a tree along an [Euler tour of its edges](https://en.wikipedia.org/wiki/Euler_tour_technique).
-
-For example:
-
-```py
->>> from sowing.traversal import depth, euler, leaves
->>> for cursor in depth(tree, preorder=False):
->>>     print(cursor.node.data)
-Leaf
-Leaf
-Left
-Leaf
-Right
-Root
-
->>> for cursor in depth(tree, preorder=True):
->>>     print(cursor.node.data)
-Root
-Left
-Leaf
-Leaf
-Right
-Leaf
-
->>> for cursor in leaves(tree):
->>>     print(cursor.node.data)
-Leaf
-Leaf
-Leaf
-
->>> for cursor in euler(tree):
->>>     print(cursor.node.data)
-Root
-Left
-Leaf
-Left
-Leaf
-Left
-Root
-Right
-Leaf
-Right
-Root
-```
-
-### Editing trees
-
-Modifying part of the tree can be tedious, since any change to a given node must be propagated recursively through its ancestors up to the root.
-[**Cursors**](#navigating-within-trees) provide an easy and efficient solution to this issue by allowing to change the currently pointed node in constant time.
-After edits are done, the `zip()` method computes the final tree structure, automatically propagating all changes towards the root.
+Cursors are also used to **modify** trees.
+At any point, the node currently pointed by a cursor can be changed in constant time.
+After edits are done, the `zip()` method generates the updated tree structure, automatically propagating all changes towards the root.
 This leaves the original tree unchanged, since it is, after all, immutable.
 
-To update nodes, edges and cursors, `replace()` methods are available on each class.
+To update nodes, edges and cursors, `replace()` methods are available on each of these classes.
 A call to `obj.replace(a=b, c=d)` returns a new copy of `obj` in which the value of the `a` field has been replaced by `b`, `c` replaced by `d`, and all other fields are left unchanged.
 Values can either be plain or callable.
 In the latter case, the callable is invoked with a reference to `obj` in order to compute the actual value used for the replacement.
@@ -289,10 +238,10 @@ Here are some examples:
 # Given the following structure...
 >>> from sowing import Node
 >>> tree = (
-    Node("Root")
-    .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")), data="towards left")
-    .add(Node("Right").add(Node("Leaf")), data="towards right")
-)
+...     Node("Root")
+...     .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")), data="towards left")
+...     .add(Node("Right").add(Node("Leaf")), data="towards right")
+... )
 >>> print(tree)
 Root
 │  ╭towards left
@@ -353,6 +302,193 @@ Left
    │  ╭towards right
    └──Right
       └──Leaf
+```
+
+### Traversals, maps, and folds
+
+The `sowing.traversal` module provides functions to **traverse** trees in the following orders:
+
+- `depth(tree, [preorder=False])` — Iterate on the nodes [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search), either in postorder (default), where parents get enumerated after their children, or in preorder, where parents get enumerated first.
+- `leaves()` — Iterate on the leaves following the tree order.
+- `euler()` — Iterate on the nodes along an [Euler tour of the tree edges](https://en.wikipedia.org/wiki/Euler_tour_technique).
+
+For example:
+
+```py
+>>> from sowing.traversal import depth, euler, leaves
+>>> for cursor in depth(tree, preorder=False):
+...     print(cursor.node.data)
+Leaf
+Leaf
+Left
+Leaf
+Right
+Root
+
+>>> for cursor in depth(tree, preorder=True):
+...     print(cursor.node.data)
+Root
+Left
+Leaf
+Leaf
+Right
+Leaf
+
+>>> for cursor in leaves(tree):
+...     print(cursor.node.data)
+Leaf
+Leaf
+Leaf
+
+>>> for cursor in euler(tree):
+...     print(cursor.node.data)
+Root
+Left
+Leaf
+Left
+Leaf
+Left
+Root
+Right
+Leaf
+Right
+Root
+```
+
+The following methods in `sowing.traversal` allow **transforming** a tree along a given traversal:
+
+- `map(fun, traversal)` — Call `fun(node, edge, index, depth)` for each node along `traversal`, passing it the data associated to the node (`node`), the data associated to the incoming edge (`edge`), the node index among its siblings relative to its parent (`index`), and the node depth (`depth`).
+    The function must return a `(node, edge)` tuple, which are used to replace the each node’s data and edge’s data respectively.
+    The `map` function returns a new tree, after the transformation has been performed on each node.
+- `fold(fun, traversal)` — Call `fun(cursor)` for each node along `traversal`, passing it a cursor pointing to that node.
+    The function must return this cursor, having optionally modified it in the process.
+    The `fold` function returns a new tree, after the transformation has been performed on each node.
+
+As a general rule, `map` is used for transformations that only change the data associated to the tree but leave its structure untouched, while `fold` allows for structural changes.
+
+Here’s a simple example which replaces each node with its index in a traversal:
+
+```py
+>>> from sowing import Node
+>>> from sowing.traversal import depth, map
+>>> tree = (
+...     Node("Root")
+...     .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")))
+...     .add(Node("Right").add(Node("Leaf")))
+... )
+
+>>> def indexer():
+...     counter = 0
+...
+...     def fun(node, edge, *_):
+...         nonlocal counter
+...         counter += 1
+...         return counter, edge
+...
+...     return fun
+
+# Show indexes for a postorder traversal
+>>> print(map(indexer(), depth(tree, preorder=False)))
+1
+├──2
+│  ├──3
+│  └──4
+└──5
+   └──6
+
+# Show indexes for a preorder traversal
+>>> print(map(indexer(), depth(tree, preorder=True)))
+6
+├──3
+│  ├──1
+│  └──2
+└──5
+   └──4
+```
+
+Here’s an example in which the tree structure is altered:
+
+```py
+>>> from sowing import Node
+>>> from sowing.repr.newick import parse
+>>> from sowing.traversal import depth, fold
+
+# Define a tree containing some unary nodes
+>>> tree = parse("(((a,(b),(c,d))),e);")
+>>> print(tree)
+┐
+├──┐
+│  └──┐
+│     ├──{'name': 'a'}
+│     ├──┐
+│     │  └──{'name': 'b'}
+│     └──┐
+│        ├──{'name': 'c'}
+│        └──{'name': 'd'}
+└──{'name': 'e'}
+
+# Folding callback that replaces all unary nodes with their child
+>>> def pruner(cursor):
+...     if len(cursor.node.edges) == 1:
+...         return cursor.replace(node=cursor.node.edges[0].node)
+...     else:
+...         return cursor
+
+# Compute the value of the tree
+>>> fold(pruner, depth(tree, preorder=False))
+┐
+├──┐
+│  ├──{'name': 'a'}
+│  ├──{'name': 'b'}
+│  └──┐
+│     ├──{'name': 'c'}
+│     └──{'name': 'd'}
+└──{'name': 'e'}
+```
+
+Finally, here’s an example which performs some computation on the tree:
+
+```py
+>>> from sowing import Node
+>>> from sowing.traversal import depth, fold
+
+# Define an arithmetical expression tree
+>>> tree = (
+...     Node("*")
+...     .add(Node("+").add(Node(6)).add(Node(2)))
+...     .add(
+...         Node("/")
+...         .add(Node(18))
+...         .add(Node("*").add(Node(2)).add(Node(3)))
+...     )
+... )
+>>> print(tree)
+*
+├──+
+│  ├──6
+│  └──2
+└──/
+   ├──18
+   └──*
+      ├──2
+      └──3
+
+# Folding callback that replaces each operation with its value
+>>> def reducer(cursor):
+...     args = tuple(edge.node.data for edge in cursor.node.edges)
+...
+...     match cursor.node.data:
+...         case "+": value = args[0] + args[1]
+...         case "-": value = args[0] - args[1]
+...         case "*": value = args[0] * args[1]
+...         case "/": value = args[0] // args[1]
+...         case int(): value = cursor.node.data
+...
+...     return cursor.replace(node=Node(value))
+
+# Compute the value of the arithmetical expression
+>>> fold(reducer, depth(tree, preorder=False)).data
+24
 ```
 
 ### Indexed trees
@@ -488,15 +624,15 @@ The `sowing.comb.binary` module provides a `binarize` function which can transfo
 
 #### Supertrees
 
-The `sowing.comb.supertree` module builds trees which “display” the topology a set of given trees, implementing the [BreakUp and AllTrees algorithms from Ng and Wormald](#references).
+The `sowing.comb.supertree` module builds trees which “display” the topology a set of given trees, implementing the [_BreakUp_ and _AllTrees_ algorithms from Ng and Wormald](#references).
 
 ```py
 >>> from sowing.repr.newick import parse
 >>> trees = (
-    parse("((a,c),(d,e));"),
-    parse("((a,b),c);"),
-    parse("(d,(f,g));"),
-)
+...     parse("((a,c),(d,e));"),
+...     parse("((a,b),c);"),
+...     parse("(d,(f,g));"),
+... )
 
 # Generate the first possible supertree
 >>> print(next(supertree(*trees)))
