@@ -31,6 +31,31 @@ class Zipper(Generic[NodeData, EdgeData]):
     # Parent pointer, or None if at root
     parent: "Zipper[NodeData, EdgeData] | None" = None
 
+    def __post_init__(self):
+        if self.parent is not None:
+            if self.parent.is_empty():
+                raise ValueError("parent of a zipper cannot be empty")
+
+            if not (0 <= self.index < len(self.parent.node.edges)):
+                raise ValueError(
+                    "zipper child index must be in the range of its parent"
+                )
+
+        if self.parent is None and self.index != -1:
+            raise ValueError("root zipper child index must be -1")
+
+    def is_root(self) -> bool:
+        """Test whether the pointed node is a root node."""
+        return self.parent is None
+
+    def is_empty(self) -> bool:
+        """Test whether there is a pointed node."""
+        return self.node is None
+
+    def is_leaf(self) -> bool:
+        """Test whether the pointed node is a leaf node."""
+        return self.node is None or self.node.edges == ()
+
     def replace(self, **kwargs) -> Self:
         """
         Create a copy of the current cursor in which the attributes given
@@ -44,14 +69,6 @@ class Zipper(Generic[NodeData, EdgeData]):
                 kwargs[key] = value(getattr(self, key))
 
         return replace(self, **kwargs)
-
-    def is_empty(self) -> bool:
-        """Test whether there is a pointed node."""
-        return self.node is None
-
-    def is_leaf(self) -> bool:
-        """Test whether the pointed node is a leaf node."""
-        return self.node is None or self.node.edges == ()
 
     def down(self, index: int = 0) -> "Zipper[NodeData, EdgeData]":
         """
@@ -104,10 +121,6 @@ class Zipper(Generic[NodeData, EdgeData]):
             depth=0,
             parent=None,
         )
-
-    def is_root(self) -> bool:
-        """Test whether the pointed node is a root node."""
-        return self.parent is None
 
     def up(self) -> "Zipper[NodeData, EdgeData]":
         """Move to the parent of the pointed node."""

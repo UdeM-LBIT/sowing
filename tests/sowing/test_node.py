@@ -105,6 +105,9 @@ def test_pop_replace():
     root = root.pop(1).add(child2, index=1)
     assert root == Node("a").add(Node("b")).add(Node("c"))
 
+    with pytest.raises(IndexError, match="pop index out of range"):
+        root.pop(2)
+
 
 def test_extend():
     root = Node("a").add(Node("b"), data="x").add(Node("c"), data="y")

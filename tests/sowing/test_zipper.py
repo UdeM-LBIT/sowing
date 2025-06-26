@@ -18,6 +18,19 @@ def test_zip_unzip():
     assert zipper.zip() == root
 
 
+def test_invalid():
+    with pytest.raises(
+        ValueError, match="zipper child index must be in the range of its parent"
+    ):
+        Zipper(parent=Zipper(Node("a")))
+
+    with pytest.raises(ValueError, match="root zipper child index must be -1"):
+        Zipper(index=0)
+
+    with pytest.raises(ValueError, match="parent of a zipper cannot be empty"):
+        Zipper(Node("a"), parent=Zipper())
+
+
 def test_empty():
     zipper = Zipper()
     assert zipper.is_root()
@@ -29,23 +42,6 @@ def test_empty():
     assert zipper.is_empty()
     assert zipper.is_last_sibling()
     assert zipper.is_last_sibling(-1)
-
-    zipper = Zipper(parent=Zipper(Node("a")))
-    assert zipper.zip() == Node("a")
-
-    zipper = Zipper(parent=Zipper(parent=Zipper(Node("a"))))
-    assert zipper.zip() == Node("a")
-
-    with pytest.raises(ValueError) as err:
-        zipper = Zipper(Node("a"), parent=Zipper())
-        zipper.zip()
-
-    assert "cannot attach to empty parent zipper" in str(err.value)
-
-    assert Zipper(parent=Zipper()).sibling() == Zipper(parent=Zipper())
-    assert Zipper(parent=Zipper()).sibling(offset=0) == Zipper(parent=Zipper())
-    assert Zipper(parent=Zipper()).sibling(offset=0) == Zipper(parent=Zipper())
-    assert Zipper(parent=Zipper()).is_last_sibling()
 
     root = Node("a").add(Node("b")).add(Node("c")).add(Node("d"))
     zipper = root.unzip().down(1).replace(node=None)
@@ -101,10 +97,8 @@ def test_up_down_sibling():
     assert zipper.down().down().up().up() == zipper
     assert zipper.down().down().up().up().depth == 0
 
-    with pytest.raises(IndexError) as err:
+    with pytest.raises(IndexError, match="cannot go up"):
         zipper.up()
-
-    assert "cannot go up" in str(err.value)
 
     assert zipper.down(0).sibling(0) == zipper.down(0)
     assert zipper.down(1).sibling(-1) == zipper.down(0)

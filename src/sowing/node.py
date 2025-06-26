@@ -148,6 +148,9 @@ class Node(Generic[NodeData, EdgeData]):
         if index == -1:
             index = len(self.edges) - 1
 
+        if not (0 <= index < len(self.edges)):
+            raise IndexError("pop index out of range")
+
         before = self.edges[:index]
         after = self.edges[index + 1 :]
         return self.replace(edges=before + after)
