@@ -4,45 +4,49 @@ from sowing import traversal
 
 
 def test_traverse():
-    single = Node("a")
-    root = (
-        Node("a")
-        .add(Node("b").add(Node("c")))
-        .add(
-            Node("d").add(
-                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
-            )
-        )
+    c = Node("c")
+    b = Node("b").add(c)
+    f = Node("f")
+    g = Node("g")
+    i = Node("i")
+    h = Node("h").add(i)
+    e = Node("e").add(f).add(g).add(h)
+    d = Node("d").add(e)
+    a = Node("a").add(b).add(d)
+
+    def assert_same_nodes(iterable, compare):
+        for left, right in zip(iterable, compare, strict=True):
+            assert left.node is right
+
+    assert_same_nodes(depth(None), ())
+    assert_same_nodes(euler(None), ())
+    assert_same_nodes(leaves(None), ())
+
+    assert_same_nodes(depth(c), (c,))
+    assert_same_nodes(depth(c, reverse=True), (c,))
+    assert_same_nodes(depth(c, preorder=True), (c,))
+    assert_same_nodes(depth(c, preorder=True, reverse=True), (c,))
+
+    assert_same_nodes(euler(c), (c,))
+    assert_same_nodes(euler(c, reverse=True), (c,))
+
+    assert_same_nodes(leaves(c), (c,))
+    assert_same_nodes(leaves(c, reverse=True), (c,))
+
+    assert_same_nodes(depth(a), (c, b, f, g, i, h, e, d, a))
+    assert_same_nodes(depth(a, reverse=True), (a, d, e, h, i, g, f, b, c))
+    assert_same_nodes(depth(a, preorder=True), (a, b, c, d, e, f, g, h, i))
+    assert_same_nodes(
+        depth(a, preorder=True, reverse=True), (i, h, g, f, e, d, c, b, a)
     )
 
-    def assert_iter_eq(iterable1, iterable2):
-        assert [zipper.node.data for zipper in iterable1] == list(iterable2)
+    assert_same_nodes(euler(a), (a, b, c, b, a, d, e, f, e, g, e, h, i, h, e, d, a))
+    assert_same_nodes(
+        euler(a, reverse=True), (a, d, e, h, i, h, e, g, e, f, e, d, a, b, c, b, a)
+    )
 
-    assert_iter_eq(depth(None), "")
-    assert_iter_eq(euler(None), "")
-    assert_iter_eq(leaves(None), "")
-
-    assert_iter_eq(depth(single), "a")
-    assert_iter_eq(depth(single, reverse=True), "a")
-    assert_iter_eq(depth(single, preorder=True), "a")
-    assert_iter_eq(depth(single, preorder=True, reverse=True), "a")
-
-    assert_iter_eq(euler(single), "a")
-    assert_iter_eq(euler(single, reverse=True), "a")
-
-    assert_iter_eq(leaves(single), "a")
-    assert_iter_eq(leaves(single, reverse=True), "a")
-
-    assert_iter_eq(depth(root), "cbfgiheda")
-    assert_iter_eq(depth(root, reverse=True), "adehigfbc")
-    assert_iter_eq(depth(root, preorder=True), "abcdefghi")
-    assert_iter_eq(depth(root, preorder=True, reverse=True), "ihgfedcba")
-
-    assert_iter_eq(euler(root), "abcbadefegehiheda")
-    assert_iter_eq(euler(root, reverse=True), "adehihegefedabcba")
-
-    assert_iter_eq(leaves(root), "cfgi")
-    assert_iter_eq(leaves(root, reverse=True), "igfc")
+    assert_same_nodes(leaves(a), (c, f, g, i))
+    assert_same_nodes(leaves(a, reverse=True), (i, g, f, c))
 
 
 def test_map_relabel():

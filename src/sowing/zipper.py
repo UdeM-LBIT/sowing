@@ -86,7 +86,7 @@ class Zipper(Generic[NodeData, EdgeData]):
         return self.replace(
             node=edges[index].node,
             data=edges[index].data,
-            parent=self.replace(node=self.node.pop(index)),
+            parent=self,
             index=index,
             depth=self.depth + 1,
         )
@@ -111,7 +111,7 @@ class Zipper(Generic[NodeData, EdgeData]):
 
         parent = self.parent.root().node
         parent = parent.replace(
-            edges=parent.edges[self.index :] + parent.edges[: self.index]
+            edges=parent.edges[self.index + 1 :] + parent.edges[: self.index]
         )
 
         return self.replace(
@@ -127,15 +127,30 @@ class Zipper(Generic[NodeData, EdgeData]):
         if self.parent is None:
             raise IndexError("cannot go up")
 
-        if self.node is None:
-            return self.parent
-
         if self.parent.node is None:
             raise ValueError("cannot attach to empty parent zipper")
 
-        return self.parent.replace(
-            node=self.parent.node.add(self.node, data=self.data, index=self.index),
-        )
+        if self.node is None:
+            return self.parent.replace(node=self.parent.node.pop(self.index))
+
+        node = self.parent.node
+        edges = node.edges
+        edge = edges[self.index]
+
+        if edge.node is not self.node:
+            edge = edge.replace(node=self.node)
+
+        if edge.data is not self.data:
+            edge = edge.replace(data=self.data)
+
+        if edge is not edges[self.index]:
+            return self.parent.replace(
+                node=node.replace(
+                    edges=edges[: self.index] + (edge,) + edges[self.index + 1 :]
+                )
+            )
+
+        return self.parent
 
     def is_last_sibling(self, direction: int = 1) -> bool:
         """
@@ -153,7 +168,7 @@ class Zipper(Generic[NodeData, EdgeData]):
         if direction < 0:
             return self.index == 0
 
-        return self.index == len(self.parent.node.edges)
+        return self.index == len(self.parent.node.edges) - 1
 
     def sibling(self, offset: int = 1) -> "Zipper[NodeData, EdgeData]":
         """
@@ -171,7 +186,7 @@ class Zipper(Generic[NodeData, EdgeData]):
             offset -= 1
 
         index = self.index + offset
-        index %= len(self.parent.node.edges) + 1
+        index %= len(self.parent.node.edges)
         return self.up().down(index)
 
     def _preorder(self, flip: bool) -> "Zipper[NodeData, EdgeData]":

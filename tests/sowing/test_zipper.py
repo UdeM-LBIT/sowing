@@ -7,7 +7,7 @@ def test_zip_unzip():
     root = Node("a").add(Node("b").add(Node("d").add(Node("e")))).add(Node("c"))
 
     zipper = root.unzip()
-    assert zipper.node == root
+    assert zipper.node is root
     assert zipper.is_root()
     assert not zipper.is_empty()
     assert not zipper.is_leaf()
@@ -15,7 +15,7 @@ def test_zip_unzip():
     assert zipper.is_last_sibling(-1)
     assert zipper.parent is None
     assert zipper.index == -1
-    assert zipper.zip() == root
+    assert zipper.zip() is root
 
 
 def test_invalid():
@@ -63,13 +63,14 @@ def test_zipper_thread():
     assert zipper == root.unzip()
 
     zipper = zipper.down(0)
-    assert zipper.node == left
+    assert zipper.node is left
     assert zipper.parent is not None
-    assert zipper.parent.node == Node("a").add(right)
+    assert zipper.parent.node is root
     assert zipper.parent.parent is None
     assert zipper.index == 0
 
-    assert root.unzip().down().down().zip() == root
+    assert root.unzip().down().down().zip() is root
+    assert root.unzip().down(1).zip() is root
 
 
 def test_up_down_sibling():
@@ -149,7 +150,31 @@ def test_children():
     assert list(Zipper().children()) == []
 
 
+def test_edit():
+    left = Node("b").add(Node("d").add(Node("e")))
+    right = Node("c")
+    root = Node("a").add(left).add(right)
+
+    zipper = root.unzip().down(1).replace(node=lambda x: x.replace(data="w"))
+    assert zipper.node.data == "w"
+    assert zipper.zip() == Node("a").add(left).add(Node("w"))
+
+    zipper = root.unzip().down(0)
+    zipper = zipper.replace(node=zipper.node.pop(0).add(Node("z"), index=0))
+    assert zipper.node.edges[0].node == Node("z")
+    assert zipper.zip() == Node("a").add(Node("b").add(Node("z"))).add(Node("c"))
+
+    zipper = root.unzip().down(1)
+    zipper = zipper.replace(data="right")
+    assert zipper.zip() == Node("a").add(left).add(right, data="right")
+
+
 def test_root():
+    root = Node("c").add(Node("a"), data="left").add(Node("b"), data="right")
+    root_left = Node("a").add(Node("c").add(Node("b"), data="right"), data="left")
+    assert root.unzip().root().zip() is root
+    assert root.unzip().down().root().zip() == root_left
+
     root = (
         Node()
         .add(
@@ -206,28 +231,9 @@ def test_root():
         )
     )
 
-    assert root.unzip().root() == root.unzip()
+    assert root.unzip().root().zip() is root
     assert root.unzip().down(1).down(1).root() == root_789.unzip()
     assert root_789.unzip().down(2).down(1).root() == root.unzip()
-
-
-def test_edit():
-    left = Node("b").add(Node("d").add(Node("e")))
-    right = Node("c")
-    root = Node("a").add(left).add(right)
-
-    zipper = root.unzip().down(1).replace(node=lambda x: x.replace(data="w"))
-    assert zipper.node.data == "w"
-
-    root = zipper.zip()
-    assert root == Node("a").add(left).add(Node("w"))
-
-    zipper = root.unzip().down(0)
-    zipper = zipper.replace(node=zipper.node.pop(0).add(Node("z"), index=0))
-    assert zipper.node.edges[0].node == Node("z")
-
-    root = zipper.zip()
-    assert root == Node("a").add(Node("b").add(Node("z"))).add(Node("w"))
 
 
 def test_next_prev():
