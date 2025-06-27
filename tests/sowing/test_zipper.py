@@ -245,57 +245,104 @@ def test_next_prev():
     assert zipper.next(preorder=True) == zipper
     assert zipper.prev(preorder=True) == zipper
 
-    root = (
-        Node("a")
-        .add(Node("b").add(Node("c")))
-        .add(
-            Node("d").add(
-                Node("e").add(Node("f")).add(Node("g")).add(Node("h").add(Node("i")))
-            )
-        )
-    )
-    zipper = root.unzip()
-    assert zipper.node == root
+    c = Node("c")
+    b = Node("b").add(c)
+    f = Node("f")
+    g = Node("g")
+    i = Node("i")
+    h = Node("h").add(i)
+    e = Node("e").add(f).add(g).add(h)
+    d = Node("d").add(e)
+    a = Node("a").add(b).add(d)
 
-    assert (zipper := zipper.next()).node.data == "c"
-    assert (zipper := zipper.next()).node.data == "b"
-    assert (zipper := zipper.next()).node.data == "f"
-    assert (zipper := zipper.next()).node.data == "g"
-    assert (zipper := zipper.next()).node.data == "i"
-    assert (zipper := zipper.next()).node.data == "h"
-    assert (zipper := zipper.next()).node.data == "e"
-    assert (zipper := zipper.next()).node.data == "d"
-    assert (zipper := zipper.next()).node == root
+    #   a
+    #  / \
+    # b   d
+    # |   |
+    # c   e
+    #    /|\
+    #   f g h
+    #       |
+    #       i
 
-    assert (zipper := zipper.prev()).node.data == "d"
-    assert (zipper := zipper.prev()).node.data == "e"
-    assert (zipper := zipper.prev()).node.data == "h"
-    assert (zipper := zipper.prev()).node.data == "i"
-    assert (zipper := zipper.prev()).node.data == "g"
-    assert (zipper := zipper.prev()).node.data == "f"
-    assert (zipper := zipper.prev()).node.data == "b"
-    assert (zipper := zipper.prev()).node.data == "c"
-    assert (zipper := zipper.prev()).node == root
+    zipper = a.unzip()
+    assert (zipper := zipper.next()).node is c
+    assert (zipper := zipper.next()).node is b
+    assert (zipper := zipper.next()).node is f
+    assert (zipper := zipper.next()).node is g
+    assert (zipper := zipper.next()).node is i
+    assert (zipper := zipper.next()).node is h
+    assert (zipper := zipper.next()).node is e
+    assert (zipper := zipper.next()).node is d
+    assert (zipper := zipper.next()).node is a
 
-    assert (zipper := zipper.next(preorder=True)).node.data == "b"
-    assert (zipper := zipper.next(preorder=True)).node.data == "c"
-    assert (zipper := zipper.next(preorder=True)).node.data == "d"
-    assert (zipper := zipper.next(preorder=True)).node.data == "e"
-    assert (zipper := zipper.next(preorder=True)).node.data == "f"
-    assert (zipper := zipper.next(preorder=True)).node.data == "g"
-    assert (zipper := zipper.next(preorder=True)).node.data == "h"
-    assert (zipper := zipper.next(preorder=True)).node.data == "i"
-    assert (zipper := zipper.next(preorder=True)).node == root
+    zipper = a.unzip()
+    assert zipper.next(skip={a}).node is a
+    assert zipper.next(skip={b}).node is b
+    zipper = a.unzip().down()
+    assert zipper.next(skip={d}).node is d
+    zipper = a.unzip().down()
+    assert zipper.next(skip={e}).node is e
 
-    assert (zipper := zipper.prev(preorder=True)).node.data == "i"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "h"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "g"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "f"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "e"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "d"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "c"
-    assert (zipper := zipper.prev(preorder=True)).node.data == "b"
-    assert (zipper := zipper.prev(preorder=True)).node == root
+    zipper = a.unzip()
+    assert (zipper := zipper.prev()).node is d
+    assert (zipper := zipper.prev()).node is e
+    assert (zipper := zipper.prev()).node is h
+    assert (zipper := zipper.prev()).node is i
+    assert (zipper := zipper.prev()).node is g
+    assert (zipper := zipper.prev()).node is f
+    assert (zipper := zipper.prev()).node is b
+    assert (zipper := zipper.prev()).node is c
+    assert (zipper := zipper.prev()).node is a
+
+    zipper = a.unzip()
+    assert zipper.prev(skip={a}).node is a
+    zipper = a.unzip().down()
+    assert zipper.prev(skip={b}).node is a
+    zipper = a.unzip().down(1).down()
+    assert zipper.prev(skip={e}).node is b
+    zipper = a.unzip().down(1).down().down(1)
+    assert zipper.prev(skip={g}).node is f
+
+    zipper = a.unzip()
+    assert (zipper := zipper.next(preorder=True)).node is b
+    assert (zipper := zipper.next(preorder=True)).node is c
+    assert (zipper := zipper.next(preorder=True)).node is d
+    assert (zipper := zipper.next(preorder=True)).node is e
+    assert (zipper := zipper.next(preorder=True)).node is f
+    assert (zipper := zipper.next(preorder=True)).node is g
+    assert (zipper := zipper.next(preorder=True)).node is h
+    assert (zipper := zipper.next(preorder=True)).node is i
+    assert (zipper := zipper.next(preorder=True)).node is a
+
+    zipper = a.unzip()
+    assert zipper.next(preorder=True, skip={a}).node is a
+    zipper = a.unzip().down()
+    assert zipper.next(preorder=True, skip={b}).node is d
+    zipper = a.unzip().down(1).down()
+    assert zipper.next(preorder=True, skip={e}).node is a
+    zipper = a.unzip().down(1).down().down(1)
+    assert zipper.next(preorder=True, skip={g}).node is h
+
+    zipper = a.unzip()
+    assert (zipper := zipper.prev(preorder=True)).node is i
+    assert (zipper := zipper.prev(preorder=True)).node is h
+    assert (zipper := zipper.prev(preorder=True)).node is g
+    assert (zipper := zipper.prev(preorder=True)).node is f
+    assert (zipper := zipper.prev(preorder=True)).node is e
+    assert (zipper := zipper.prev(preorder=True)).node is d
+    assert (zipper := zipper.prev(preorder=True)).node is c
+    assert (zipper := zipper.prev(preorder=True)).node is b
+    assert (zipper := zipper.prev(preorder=True)).node is a
+
+    zipper = a.unzip()
+    assert zipper.prev(preorder=True, skip={a}).node is a
+    zipper = a.unzip().down()
+    assert zipper.prev(preorder=True, skip={b}).node is a
+    zipper = a.unzip().down(1).down()
+    assert zipper.prev(preorder=True, skip={e}).node is d
+    zipper = a.unzip().down(1).down().down(1)
+    assert zipper.prev(preorder=True, skip={g}).node is f
 
 
 def test_str():

@@ -1,5 +1,5 @@
 from typing import Generic, Hashable, Self, TypeVar, TYPE_CHECKING
-from collections.abc import Iterable
+from collections.abc import Iterable, Collection
 from dataclasses import dataclass, replace
 from inspect import signature
 from .util.dataclasses import repr_default
@@ -189,11 +189,13 @@ class Zipper(Generic[NodeData, EdgeData]):
         index %= len(self.parent.node.edges)
         return self.up().down(index)
 
-    def _preorder(self, flip: bool) -> "Zipper[NodeData, EdgeData]":
+    def _preorder(
+        self, flip: bool, skip: "Collection[Node]"
+    ) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
-        if not self.is_leaf():
+        if self.node not in skip and not self.is_leaf():
             return self.down(child)
 
         while self.is_last_sibling(sibling):
@@ -204,12 +206,14 @@ class Zipper(Generic[NodeData, EdgeData]):
 
         return self.sibling(sibling)
 
-    def _postorder(self, flip: bool) -> "Zipper[NodeData, EdgeData]":
+    def _postorder(
+        self, flip: bool, skip: "Collection[Node]"
+    ) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
         if self.is_root():
-            while not self.is_leaf():
+            while self.node not in skip and not self.is_leaf():
                 self = self.down(child)
 
             return self
@@ -219,34 +223,40 @@ class Zipper(Generic[NodeData, EdgeData]):
 
         self = self.sibling(sibling)
 
-        while not self.is_leaf():
+        while self.node not in skip and not self.is_leaf():
             self = self.down(child)
 
         return self
 
-    def next(self, preorder: bool = False) -> "Zipper[NodeData, EdgeData]":
+    def next(
+        self, preorder: bool = False, skip: "Collection[Node]" = ()
+    ) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the next node in preorder or postorder.
 
         :param preorder: pass True to move in preorder (default is postorder)
+        :param skip: set of nodes whose subtrees should not be visited
         :returns: updated zipper
         """
         if preorder:
-            return self._preorder(flip=False)
+            return self._preorder(flip=False, skip=skip)
         else:
-            return self._postorder(flip=False)
+            return self._postorder(flip=False, skip=skip)
 
-    def prev(self, preorder: bool = False) -> "Zipper[NodeData, EdgeData]":
+    def prev(
+        self, preorder: bool = False, skip: "Collection[Node]" = ()
+    ) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the previous node in preorder or postorder.
 
         :param preorder: pass True to move in preorder (default is postorder)
+        :param skip: set of nodes whose subtrees should not be visited
         :returns: updated zipper
         """
         if preorder:
-            return self._postorder(flip=True)
+            return self._postorder(flip=True, skip=skip)
         else:
-            return self._preorder(flip=True)
+            return self._preorder(flip=True, skip=skip)
 
     def zip(self) -> "Node[NodeData, EdgeData] | None":
         """Zip up to the root and return it."""
