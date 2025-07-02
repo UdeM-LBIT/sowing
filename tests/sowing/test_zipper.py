@@ -346,23 +346,54 @@ def test_next_prev():
 
 
 def test_str():
-    ascii_chars = {
-        "root": ".",
-        "branch": "/",
-        "init": "+--",
-        "cont": "|  ",
-        "init_last": "\\--",
-        "cont_last": "   ",
-        "highlight": "x ",
-    }
-
-    root = Node(1).add(Node(2).add(Node(3)).add(Node(4))).add(Node(5).add(Node(6)))
+    root = (
+        Node(1)
+        .add(Node(2).add(Node(3)).add(Node(4).add(Node(5))))
+        .add(Node(6).add(Node(4).add(Node(5))))
+    )
     cursor = root.unzip()
 
-    assert str(cursor) == "○ 1\n├──2\n│  ├──3\n│  └──4\n└──5\n   └──6"
-    assert str(cursor.down()) == "1\n├──○ 2\n│  ├──3\n│  └──4\n└──5\n   └──6"
-    assert str(cursor.down(1)) == "1\n├──2\n│  ├──3\n│  └──4\n└──○ 5\n   └──6"
-    assert (
-        cursor.__str__(chars=ascii_chars)
-        == "x 1\n+--2\n|  +--3\n|  \\--4\n\\--5\n   \\--6"
+    assert str(cursor) == "\n".join(
+        (
+            "○ 1",
+            "├──2",
+            "│  ├──3",
+            "│  └──4",
+            "│     └──5",
+            "└──6",
+            "   └──4 (…)",
+        )
+    )
+    assert str(cursor.down()) == "\n".join(
+        (
+            "1",
+            "├──○ 2",
+            "│  ├──3",
+            "│  └──4",
+            "│     └──5",
+            "└──6",
+            "   └──4 (…)",
+        )
+    )
+    assert cursor.__str__(
+        chars={
+            "root": ".",
+            "branch": "/",
+            "init": "+--",
+            "cont": "|  ",
+            "init_last": "\\--",
+            "cont_last": "   ",
+            "highlight": "x ",
+            "repeat": " (repeat)",
+        }
+    ) == "\n".join(
+        (
+            r"x 1",
+            r"+--2",
+            r"|  +--3",
+            r"|  \--4",
+            r"|     \--5",
+            r"\--6",
+            r"   \--4 (repeat)",
+        )
     )

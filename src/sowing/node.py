@@ -1,6 +1,6 @@
 from typing import Any, Generic, Hashable, Iterable, Self, TypeVar, overload
 from dataclasses import dataclass, replace, field
-from collections.abc import Mapping
+from collections.abc import Set, Mapping
 from .util.dataclasses import repr_default
 from .zipper import Zipper
 
@@ -222,21 +222,13 @@ class Node(Generic[NodeData, EdgeData]):
         """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
 
-    def __str__(
+    def _str(
         self,
-        prefix: str = "",
-        chars: dict[str, str] = {
-            "root": "┐",
-            "branch": "╭",
-            "init": "├──",
-            "cont": "│  ",
-            "init_last": "└──",
-            "cont_last": "   ",
-            "highlight": "○ ",
-        },
-        highlight: Self | None = None,
+        seen: Set[Self],
+        prefix: str,
+        chars: Mapping[str, str],
+        highlight: Self | None,
     ) -> str:
-        """Create a human-readable representation of this subtree."""
         if self.data is None:
             result = [chars["root"]] if self.edges and not self == highlight else [""]
         elif isinstance(self.data, Mapping):
@@ -247,27 +239,60 @@ class Node(Generic[NodeData, EdgeData]):
         if self == highlight:
             result[0] = chars["highlight"] + result[0]
 
-        init = chars["init"]
-        cont = chars["cont"]
+        if self in seen and self.edges:
+            result[0] = result[0] + chars["repeat"]
+        else:
+            seen.add(self)
+            init = chars["init"]
+            cont = chars["cont"]
 
-        for index, edge in enumerate(self.edges):
-            if isinstance(edge.data, Mapping):
-                branch = str(dict(edge.data))
-            elif edge.data is not None:
-                branch = str(edge.data)
-            else:
-                branch = ""
+            for index, edge in enumerate(self.edges):
+                if isinstance(edge.data, Mapping):
+                    branch = str(dict(edge.data))
+                elif edge.data is not None:
+                    branch = str(edge.data)
+                else:
+                    branch = ""
 
-            if branch:
-                result.append(prefix + cont + chars["branch"] + branch)
+                if branch:
+                    result.append(prefix + cont + chars["branch"] + branch)
 
-            if index + 1 == len(self.edges):
-                init = chars["init_last"]
-                cont = chars["cont_last"]
+                if index + 1 == len(self.edges):
+                    init = chars["init_last"]
+                    cont = chars["cont_last"]
 
-            subtree = edge.node.__str__(
-                prefix=prefix + cont, chars=chars, highlight=highlight
-            )
-            result.append(prefix + init + subtree)
+                subtree = edge.node._str(
+                    prefix=prefix + cont,
+                    seen=seen,
+                    chars=chars,
+                    highlight=highlight,
+                )
+                result.append(prefix + init + subtree)
 
         return "\n".join(result)
+
+    def __str__(
+        self,
+        prefix: str = "",
+        chars: Mapping[str, str] = {},
+        highlight: Self | None = None,
+    ) -> str:
+        """Create a human-readable representation of this subtree."""
+        return self._str(
+            seen=set(),
+            prefix=prefix,
+            chars=(
+                {
+                    "root": "┐",
+                    "branch": "╭",
+                    "init": "├──",
+                    "cont": "│  ",
+                    "init_last": "└──",
+                    "cont_last": "   ",
+                    "highlight": "○ ",
+                    "repeat": " (…)",
+                }
+                | chars
+            ),
+            highlight=highlight,
+        )
