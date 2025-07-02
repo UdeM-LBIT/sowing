@@ -236,7 +236,7 @@ class Node(Generic[NodeData, EdgeData]):
         else:
             result = [str(self.data)]
 
-        if self == highlight:
+        if self is highlight:
             result[0] = chars["highlight"] + result[0]
 
         if self in seen and self.edges:
