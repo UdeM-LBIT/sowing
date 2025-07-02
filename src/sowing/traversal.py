@@ -27,6 +27,7 @@ def depth(
     node: Node[NodeData, EdgeData] | None,
     preorder: bool = False,
     reverse: bool = False,
+    unique: bool = False,
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse a tree in depth-first order.
@@ -35,12 +36,15 @@ def depth(
     :param preorder: pass True to visit parents before children (preorder),
         defaults to children before parents (postorder)
     :param reverse: pass True to reverse the order
+    :param unique: pass True to skip repeated subtrees
     :returns: generator that yields nodes in the specified order
     """
     if node is None:
         return
 
+    seen = set()
     cursor = node.unzip()
+
     advance = partial(
         Zipper.prev if reverse else Zipper.next,
         preorder=preorder,
@@ -51,12 +55,18 @@ def depth(
         cursor = advance(cursor)
 
     while True:
-        cursor = yield from _default(cursor)
+        node = cursor.node
+
+        if node not in seen:
+            cursor = yield from _default(cursor)
 
         if not root_start and cursor.is_root():
             return
 
-        cursor = advance(cursor)
+        cursor = advance(cursor, skip=seen)
+
+        if unique:
+            seen.add(node)
 
         if root_start and cursor.is_root():
             return
