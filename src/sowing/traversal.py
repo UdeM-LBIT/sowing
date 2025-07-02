@@ -1,5 +1,5 @@
 from typing import cast, Any, Callable, Generator, Hashable, TypeVar
-from functools import wraps, partial
+from functools import partial
 from .node import Node
 from .zipper import Zipper
 
@@ -191,8 +191,7 @@ def map(
     :returns: transformed tree
     """
 
-    @wraps(func)
-    def wrapper(zipper: Zipper):
+    def wrapper(zipper: Zipper[NodeData, EdgeData]) -> Zipper[OutNodeData, OutEdgeData]:
         node, edge = func(zipper.node.data, zipper.data, zipper.index, zipper.depth)
         return zipper.replace(node=zipper.node.replace(data=node), data=edge)
 

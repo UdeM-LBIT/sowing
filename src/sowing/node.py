@@ -16,7 +16,7 @@ class Edge(Generic[NodeData, EdgeData]):
     node: "Node[NodeData, EdgeData]"
 
     # Arbitrary data attached to this edge
-    data: EdgeData | None = None
+    data: EdgeData = None
 
     def replace(self, **kwargs) -> Self:
         """
@@ -37,7 +37,7 @@ class Edge(Generic[NodeData, EdgeData]):
 @dataclass(frozen=True, slots=True)
 class Node(Generic[NodeData, EdgeData]):
     # Arbitrary data attached to this node
-    data: NodeData | None = None
+    data: NodeData = None
 
     # Outgoing edges towards child nodes
     edges: tuple[Edge[NodeData, EdgeData], ...] = ()
