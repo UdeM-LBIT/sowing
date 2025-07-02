@@ -1,4 +1,4 @@
-from typing import Generic, Hashable, Iterable, Self, TypeVar, overload
+from typing import Any, Generic, Hashable, Iterable, Self, TypeVar, overload
 from dataclasses import dataclass, replace, field
 from collections.abc import Mapping
 from .util.dataclasses import repr_default
@@ -50,6 +50,69 @@ class Node(Generic[NodeData, EdgeData]):
 
     def __hash__(self) -> int:
         return self._hash
+
+    def __eq__(self, rhs: Any) -> bool:
+        if self is rhs:
+            return True
+
+        if not isinstance(rhs, self.__class__):
+            return NotImplemented
+
+        if self._hash != rhs._hash:
+            return False
+
+        seen_lhs = {}
+        seen_rhs = {}
+
+        cursor_lhs = self.unzip()
+        cursor_rhs = rhs.unzip()
+
+        while True:
+            node_lhs = cursor_lhs.node
+            id_lhs = id(node_lhs)
+            node_rhs = cursor_rhs.node
+            id_rhs = id(node_rhs)
+            visited = id_lhs in seen_lhs and id_rhs in seen_rhs
+
+            if visited and seen_lhs[id_lhs] == seen_rhs[id_rhs]:
+                # Optimization which avoids exponential time comparisons
+                # for trees containing a lot of repeated subtrees: skip
+                # visiting subtrees that are repeated in both trees,
+                # simply make sure they refer to the same subtree
+                cursor_lhs = cursor_lhs.next(preorder=True, skip=(node_lhs,))
+                cursor_rhs = cursor_rhs.next(preorder=True, skip=(node_rhs,))
+
+            else:
+                # Trees with no repeated parts are compared normally:
+                # same node data and outgoing edge data
+                if node_lhs.data != node_rhs.data:
+                    return False
+
+                if len(node_lhs.edges) != len(node_rhs.edges):
+                    return False
+
+                if any(
+                    edge_lhs.data != edge_rhs.data
+                    for edge_lhs, edge_rhs in zip(node_lhs.edges, node_rhs.edges)
+                ):
+                    return False
+
+                if visited:
+                    seen_lhs[id_lhs] = seen_rhs[id_rhs]
+                else:
+                    seen_lhs[id_lhs] = len(seen_lhs)
+                    seen_rhs[id_rhs] = len(seen_rhs)
+
+                cursor_lhs = cursor_lhs.next(preorder=True)
+                cursor_rhs = cursor_rhs.next(preorder=True)
+
+            # Trees should have the same size, i.e., the root should be
+            # reached again at the same iteration
+            if cursor_lhs.is_root() and cursor_rhs.is_root():
+                return True
+
+            if cursor_lhs.is_root() or cursor_rhs.is_root():
+                return False
 
     def replace(self, **kwargs) -> Self:
         """

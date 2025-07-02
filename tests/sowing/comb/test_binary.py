@@ -170,8 +170,6 @@ def test_binarize_at_multree():
             if sum(muls) != n:
                 continue
 
-            print(n, muls)
-
             mul_a, mul_b, mul_c = muls
             root = (
                 N()
