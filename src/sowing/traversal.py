@@ -1,5 +1,6 @@
-from typing import cast, Any, Callable, Generator, Hashable, TypeVar
+from typing import cast, Any, Callable, Generator, Hashable, TypeVar, overload
 from functools import partial
+from inspect import signature
 from .node import Node
 from .zipper import Zipper
 
@@ -169,6 +170,27 @@ def fold(
         return out_cursor.zip()
 
 
+@overload
+def map(
+    func: Callable[[NodeData], OutNodeData],
+    traversal: Traversal,
+) -> Node[OutNodeData, OutEdgeData] | None: ...
+
+
+@overload
+def map(
+    func: Callable[[NodeData, EdgeData], tuple[OutNodeData, OutEdgeData]],
+    traversal: Traversal,
+) -> Node[OutNodeData, OutEdgeData] | None: ...
+
+
+@overload
+def map(
+    func: Callable[[NodeData, EdgeData, int], tuple[OutNodeData, OutEdgeData]],
+    traversal: Traversal,
+) -> Node[OutNodeData, OutEdgeData] | None: ...
+
+
 def map(
     func: Callable[[NodeData, EdgeData, int, int], tuple[OutNodeData, OutEdgeData]],
     traversal: Traversal,
@@ -190,9 +212,44 @@ def map(
     :param traversal: tree traversal
     :returns: transformed tree
     """
+    sig = signature(func)
 
-    def wrapper(zipper: Zipper[NodeData, EdgeData]) -> Zipper[OutNodeData, OutEdgeData]:
-        node, edge = func(zipper.node.data, zipper.data, zipper.index, zipper.depth)
-        return zipper.replace(node=zipper.node.replace(data=node), data=edge)
+    match len(sig.parameters):
+        case 1:
+
+            def wrapper(
+                zipper: Zipper[NodeData, EdgeData],
+            ) -> Zipper[OutNodeData, OutEdgeData]:
+                node = func(zipper.node.data)
+                return zipper.replace(node=zipper.node.replace(data=node))
+
+        case 2:
+
+            def wrapper(
+                zipper: Zipper[NodeData, EdgeData],
+            ) -> Zipper[OutNodeData, OutEdgeData]:
+                node, edge = func(zipper.node.data, zipper.data)
+                return zipper.replace(node=zipper.node.replace(data=node), data=edge)
+
+        case 3:
+
+            def wrapper(
+                zipper: Zipper[NodeData, EdgeData],
+            ) -> Zipper[OutNodeData, OutEdgeData]:
+                node, edge = func(zipper.node.data, zipper.data, zipper.index)
+                return zipper.replace(node=zipper.node.replace(data=node), data=edge)
+
+        case 4:
+
+            def wrapper(
+                zipper: Zipper[NodeData, EdgeData],
+            ) -> Zipper[OutNodeData, OutEdgeData]:
+                node, edge = func(
+                    zipper.node.data, zipper.data, zipper.index, zipper.depth
+                )
+                return zipper.replace(node=zipper.node.replace(data=node), data=edge)
+
+        case _:
+            raise TypeError("map: 'func' must accept between 1 and 4 arguments")
 
     return fold(wrapper, traversal)

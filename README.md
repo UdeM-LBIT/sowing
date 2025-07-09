@@ -357,8 +357,10 @@ Root
 
 The following methods in `sowing.traversal` allow **transforming** a tree along a given traversal:
 
-- `map(fun, traversal)` — Call `fun(node, edge, index, depth)` for each node along `traversal`, passing it the data associated to the node (`node`), the data associated to the incoming edge (`edge`), the node index among its siblings relative to its parent (`index`), and the node depth (`depth`).
-    The function must return a `(node, edge)` tuple, which are used to replace the each node’s data and edge’s data respectively.
+- `map(fun, traversal)` — Call `fun(node, [edge, [index, [depth]]])` for each node along `traversal`.
+    If `fun` accepts a single parameter, it receives the data associated to the node and must return a value which is used to replace the node’s data.
+    If it accepts two parameters or more, it also receives the data associated to the incoming edge and must return a `(node, edge)` tuple, which are used to replace each node’s data and edge’s data respectively.
+    The optional third and fourth parameters receive the node child index relative to its parent and the node depth.
     The `map` function returns a new tree, after the transformation has been performed on each node.
 - `fold(fun, traversal)` — Call `fun(cursor)` for each node along `traversal`, passing it a cursor pointing to that node.
     The function must return this cursor, having optionally modified it in the process.
@@ -366,29 +368,42 @@ The following methods in `sowing.traversal` allow **transforming** a tree along 
 
 As a general rule, `map` is used for transformations that only change the data associated to the tree but leave its structure untouched, while `fold` allows for structural changes.
 
-Here’s a simple example which replaces each node with its index in a traversal:
+Here’s a simple example which turns the data attached to each node into lowercase:
 
 ```py
 >>> from sowing import Node
 >>> from sowing.traversal import depth, map
 >>> tree = (
-...     Node("Root")
-...     .add(Node("Left").add(Node("Leaf")).add(Node("Leaf")))
-...     .add(Node("Right").add(Node("Leaf")))
+...     Node("ROOT")
+...     .add(Node("LEFT").add(Node("LEAF")).add(Node("LEAF")))
+...     .add(Node("RIGHT").add(Node("LEAF")))
 ... )
+>>> print(map(str.lower, depth(tree)))
+root
+├──left
+│  ├──leaf
+│  └──leaf
+└──right
+   └──leaf
+```
 
+The following example illustrates the differences between postorder and preorder traversal by numbering each node by its traversal index:
+
+```py
+>>> from sowing import Node
+>>> from sowing.traversal import depth, map
 >>> def indexer():
 ...     counter = 0
 ...
-...     def fun(node, edge, *_):
+...     def fun(node):
 ...         nonlocal counter
 ...         counter += 1
-...         return counter, edge
+...         return counter
 ...
 ...     return fun
 
-# Show indexes for a postorder traversal
->>> print(map(indexer(), depth(tree, preorder=False)))
+>>> tree = Node().add(Node().add(Node()).add(Node())).add(Node().add(Node()))
+>>> print(map(indexer(), depth(tree, preorder=True)))
 1
 ├──2
 │  ├──3
@@ -396,8 +411,7 @@ Here’s a simple example which replaces each node with its index in a traversal
 └──5
    └──6
 
-# Show indexes for a preorder traversal
->>> print(map(indexer(), depth(tree, preorder=True)))
+>>> print(map(indexer(), depth(tree, preorder=False)))
 6
 ├──3
 │  ├──1

@@ -146,8 +146,8 @@ def test_map_relabel():
     )
 
     # Double all node names
-    def relabel(node, edge, *_):
-        return node * 2, edge
+    def relabel(node):
+        return node * 2
 
     assert traversal.map(relabel, depth(before)) == after_depth
     assert traversal.map(relabel, depth(before, preorder=True)) == after_depth
@@ -185,7 +185,7 @@ def test_map_edges():
     )
 
     # Double node names and triple edge names
-    def relabel(node, edge, *_):
+    def relabel(node, edge):
         node *= 2
         edge = edge * 3 if edge is not None else None
         return node, edge
@@ -235,7 +235,7 @@ def test_map_sibling():
     )
 
     # Replace node values by their sibling index
-    def map_index(node, edge, index, *_):
+    def map_index(node, edge, index):
         return index, edge
 
     assert traversal.map(map_index, depth(before)) == after
@@ -259,8 +259,8 @@ def test_map_visits():
         .add(Node(2).add(Node(4).add(Node(1)).add(Node(1)).add(Node(2).add(Node(1)))))
     )
 
-    def visit(node, edge, *_):
-        return node + 1, edge
+    def visit(node):
+        return node + 1
 
     assert traversal.map(visit, depth(before)) == after_depth
     assert traversal.map(visit, depth(before, preorder=True)) == after_depth
