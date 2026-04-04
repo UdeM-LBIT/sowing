@@ -148,6 +148,20 @@ def test_extend():
     assert copy.edges[2].data is None
 
 
+def test_children():
+    node_a = Node("a")
+    node_b = Node("b")
+    node_c = Node("c")
+    node_d = Node("d")
+    root = Node().add(node_a).add(node_b).add(node_c).add(node_d)
+
+    children = list(root.children())
+    assert children[0] is node_a
+    assert children[1] is node_b
+    assert children[2] is node_c
+    assert children[3] is node_d
+
+
 def test_eq_hash():
     assert Node("a") == Node("a")
     assert hash(Node("a")) == hash(Node("a"))

@@ -221,6 +221,11 @@ class Node(Generic[NodeData, EdgeData]):
         """Make a zipper for this subtree pointing on its root."""
         return Zipper(self)
 
+    def children(self) -> Iterable[Self]:
+        """Iterate through the children of this node."""
+        for edge in self.edges:
+            yield edge.node
+
     def _str(
         self,
         seen: Set[Self],
