@@ -7,7 +7,6 @@ from .util.rangequery import RangeQuery
 from dataclasses import field, Field
 import inspect
 
-
 NodeData = TypeVar("NodeData", bound=Hashable)
 EdgeData = TypeVar("EdgeData", bound=Hashable)
 

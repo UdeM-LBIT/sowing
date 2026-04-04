@@ -4,7 +4,6 @@ from collections.abc import Set, Mapping
 from .util.dataclasses import repr_default
 from .zipper import Zipper
 
-
 NodeData = TypeVar("NodeData", bound=Hashable)
 EdgeData = TypeVar("EdgeData", bound=Hashable)
 
@@ -79,8 +78,8 @@ class Node(Generic[NodeData, EdgeData]):
                 # for trees containing a lot of repeated subtrees: skip
                 # visiting subtrees that are repeated in both trees,
                 # simply make sure they refer to the same subtree
-                cursor_lhs = cursor_lhs.next(preorder=True, skip=(node_lhs,))
-                cursor_rhs = cursor_rhs.next(preorder=True, skip=(node_rhs,))
+                cursor_lhs = cursor_lhs.next(preorder=True, skip_ids=(id_lhs,))
+                cursor_rhs = cursor_rhs.next(preorder=True, skip_ids=(id_rhs,))
 
             else:
                 # Trees with no repeated parts are compared normally:

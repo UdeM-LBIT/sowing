@@ -4,7 +4,6 @@ from sowing.comb.binary import is_binary, binarize_at, binarize
 from math import prod
 from itertools import product
 
-
 a, b, c, d, e, f, g, h, p, r = map(N, "abcdefghpr")
 
 

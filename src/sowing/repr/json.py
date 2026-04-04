@@ -2,7 +2,6 @@ from typing import Any, Callable, Hashable, TypeVar
 from json import JSONEncoder
 from ..node import Node, Edge
 
-
 NodeData = TypeVar("NodeData", bound=Hashable)
 EdgeData = TypeVar("EdgeData", bound=Hashable)
 

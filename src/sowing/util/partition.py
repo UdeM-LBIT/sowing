@@ -2,7 +2,6 @@ from typing import TypeVar, Generic, Iterable, Self, Generator
 from itertools import chain, combinations
 from copy import deepcopy
 
-
 Item = TypeVar("Item")
 
 

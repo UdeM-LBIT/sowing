@@ -256,8 +256,7 @@ def test_phylip():
     )
 
     assert (
-        newick.parse(
-            """(
+        newick.parse("""(
             (raccoon:19.19959,bear:6.80041):0.84600,
             (
                 (sea_lion:11.99700, seal:12.00300):7.52973,
@@ -267,8 +266,7 @@ def test_phylip():
                 ):2.09460
             ):3.87382,
             dog:25.46154
-        );"""
-        )
+        );""")
         == (
             Node()
             .add(

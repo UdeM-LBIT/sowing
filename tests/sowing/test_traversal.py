@@ -61,9 +61,8 @@ def test_traverse_repeats():
     b = Node("b").add(c).add(d)
     i = Node("i").add(d)
     k = Node("k").add(f)
-    m = Node("m")
-    n = Node("n")
-    l = Node("l").add(m).add(h).add(n)  # noqa: E741
+    m = Node("g")
+    l = Node("f").add(m).add(h)  # noqa: E741
     j = Node("j").add(k).add(l)
     a = Node("a").add(b).add(i).add(j)
 
@@ -72,36 +71,50 @@ def test_traverse_repeats():
     #   b   i   j
     #  / \ /   / \
     # c   d   k   l
-    #    / \ /   /|\
-    #   e   f   m | n
+    #    / \ /   / \
+    #   e   f   m  /
     #      / \    /
     #     g   h _/
 
     assert_same_nodes(
-        depth(a), (c, e, g, h, f, d, b, e, g, h, f, d, i, g, h, f, k, m, h, n, l, j, a)
+        depth(a), (c, e, g, h, f, d, b, e, g, h, f, d, i, g, h, f, k, m, h, l, j, a)
     )
-    assert_same_nodes(depth(a, unique=True), (c, e, g, h, f, d, b, i, k, m, n, l, j, a))
+    assert_same_nodes(depth(a, unique="id"), (c, e, g, h, f, d, b, i, k, m, l, j, a))
+    assert_same_nodes(depth(a, unique="eq"), (c, e, g, h, f, d, b, i, k, j, a))
+
     assert_same_nodes(
         depth(a, reverse=True),
-        (a, j, l, n, h, m, k, f, h, g, i, d, f, h, g, e, b, d, f, h, g, e, c),
+        (a, j, l, h, m, k, f, h, g, i, d, f, h, g, e, b, d, f, h, g, e, c),
     )
     assert_same_nodes(
-        depth(a, reverse=True, unique=True), (a, j, l, n, h, m, k, f, g, i, d, e, b, c)
+        depth(a, reverse=True, unique="id"), (a, j, l, h, m, k, f, g, i, d, e, b, c)
     )
+    assert_same_nodes(
+        depth(a, reverse=True, unique="eq"), (a, j, l, h, m, k, i, d, e, b, c)
+    )
+
     assert_same_nodes(
         depth(a, preorder=True),
-        (a, b, c, d, e, f, g, h, i, d, e, f, g, h, j, k, f, g, h, l, m, h, n),
+        (a, b, c, d, e, f, g, h, i, d, e, f, g, h, j, k, f, g, h, l, m, h),
     )
     assert_same_nodes(
-        depth(a, preorder=True, unique=True), (a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+        depth(a, preorder=True, unique="id"), (a, b, c, d, e, f, g, h, i, j, k, l, m)
     )
+    assert_same_nodes(
+        depth(a, preorder=True, unique="eq"), (a, b, c, d, e, f, g, h, i, j, k)
+    )
+
     assert_same_nodes(
         depth(a, preorder=True, reverse=True),
-        (n, h, m, l, h, g, f, k, j, h, g, f, e, d, i, h, g, f, e, d, c, b, a),
+        (h, m, l, h, g, f, k, j, h, g, f, e, d, i, h, g, f, e, d, c, b, a),
     )
     assert_same_nodes(
-        depth(a, preorder=True, reverse=True, unique=True),
-        (n, h, m, l, g, f, k, j, e, d, i, c, b, a),
+        depth(a, preorder=True, reverse=True, unique="id"),
+        (h, m, l, g, f, k, j, e, d, i, c, b, a),
+    )
+    assert_same_nodes(
+        depth(a, preorder=True, reverse=True, unique="eq"),
+        (h, m, l, k, j, e, d, i, c, b, a),
     )
 
 
@@ -109,7 +122,7 @@ def test_traverse_repeats_exp():
     size = 30
     grid = _make_grid(size)
 
-    for cursor, cell in zip(depth(grid, unique=True), product(range(size), repeat=2)):
+    for cursor, cell in zip(depth(grid, unique="id"), product(range(size), repeat=2)):
         assert cursor.node.data == cell
 
 

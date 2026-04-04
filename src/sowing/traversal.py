@@ -1,9 +1,8 @@
-from typing import cast, Any, Callable, Generator, Hashable, TypeVar, overload
+from typing import cast, Any, Callable, Generator, Hashable, TypeVar, overload, Literal
 from functools import partial
 from inspect import signature
 from .node import Node
 from .zipper import Zipper
-
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -24,11 +23,14 @@ def _default(value: T) -> Generator[T, U | None, U | T]:
     return result if result is not None else value
 
 
+UnicityCheck = Literal[False, "id", "eq"]
+
+
 def depth(
     node: Node[NodeData, EdgeData] | None,
     preorder: bool = False,
     reverse: bool = False,
-    unique: bool = False,
+    unique: UnicityCheck = False,
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse a tree in depth-first order.
@@ -37,13 +39,20 @@ def depth(
     :param preorder: pass True to visit parents before children (preorder),
         defaults to children before parents (postorder)
     :param reverse: pass True to reverse the order
-    :param unique: pass True to skip repeated subtrees
+    :param unique: how to behave with repeated subtrees, either:
+        - False (default): if the tree contains repeated subtrees then those
+          subtrees are traversed as many times as they are repeated;
+        - "eq": if multiple equivalent subtrees appear in the tree (i.e., with equal
+          labels and topology), then only the first occurrence is traversed
+        - "id": if the same subtree object is the child of multiple parents (like in a
+          DAG), then only the first occurrence is traversed
     :returns: generator that yields nodes in the specified order
     """
     if node is None:
         return
 
-    seen = set()
+    seen_ids = set()
+    seen_nodes = set()
     cursor = node.unzip()
 
     advance = partial(
@@ -58,16 +67,22 @@ def depth(
     while True:
         node = cursor.node
 
-        if node not in seen:
+        if (
+            unique is False
+            or (unique == "id" and id(node) not in seen_ids)
+            or (unique == "eq" and node not in seen_nodes)
+        ):
             cursor = yield from _default(cursor)
 
         if not root_start and cursor.is_root():
             return
 
-        cursor = advance(cursor, skip=seen)
+        cursor = advance(cursor, skip_ids=seen_ids, skip_nodes=seen_nodes)
 
-        if unique:
-            seen.add(node)
+        if unique == "id":
+            seen_ids.add(id(node))
+        elif unique == "eq":
+            seen_nodes.add(node)
 
         if root_start and cursor.is_root():
             return

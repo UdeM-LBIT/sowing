@@ -4,7 +4,6 @@ from dataclasses import dataclass, replace
 from inspect import signature
 from .util.dataclasses import repr_default
 
-
 if TYPE_CHECKING:
     from .node import Node
 
@@ -190,12 +189,19 @@ class Zipper(Generic[NodeData, EdgeData]):
         return self.up().down(index)
 
     def _preorder(
-        self, flip: bool, skip: "Collection[Node]"
+        self,
+        flip: bool,
+        skip_ids: "Collection[int]" = (),
+        skip_nodes: "Collection[Node]" = (),
     ) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
-        if self.node not in skip and not self.is_leaf():
+        if (
+            id(self.node) not in skip_ids
+            and self.node not in skip_nodes
+            and not self.is_leaf()
+        ):
             return self.down(child)
 
         while self.is_last_sibling(sibling):
@@ -207,13 +213,20 @@ class Zipper(Generic[NodeData, EdgeData]):
         return self.sibling(sibling)
 
     def _postorder(
-        self, flip: bool, skip: "Collection[Node]"
+        self,
+        flip: bool,
+        skip_ids: "Collection[int]" = (),
+        skip_nodes: "Collection[Node]" = (),
     ) -> "Zipper[NodeData, EdgeData]":
         child = -1 if flip else 0
         sibling = -1 if flip else 1
 
         if self.is_root():
-            while self.node not in skip and not self.is_leaf():
+            while (
+                id(self.node) not in skip_ids
+                and self.node not in skip_nodes
+                and not self.is_leaf()
+            ):
                 self = self.down(child)
 
             return self
@@ -223,40 +236,52 @@ class Zipper(Generic[NodeData, EdgeData]):
 
         self = self.sibling(sibling)
 
-        while self.node not in skip and not self.is_leaf():
+        while (
+            id(self.node) not in skip_ids
+            and self.node not in skip_nodes
+            and not self.is_leaf()
+        ):
             self = self.down(child)
 
         return self
 
     def next(
-        self, preorder: bool = False, skip: "Collection[Node]" = ()
+        self,
+        preorder: bool = False,
+        skip_ids: "Collection[int]" = (),
+        skip_nodes: "Collection[Node]" = (),
     ) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the next node in preorder or postorder.
 
         :param preorder: pass True to move in preorder (default is postorder)
-        :param skip: set of nodes whose subtrees should not be visited
+        :param skip_ids: set of ids of nodes whose subtree should be skipped
+        :param skip_nodes: set of nodes whose subtrees should be skipped
         :returns: updated zipper
         """
         if preorder:
-            return self._preorder(flip=False, skip=skip)
+            return self._preorder(flip=False, skip_ids=skip_ids, skip_nodes=skip_nodes)
         else:
-            return self._postorder(flip=False, skip=skip)
+            return self._postorder(flip=False, skip_ids=skip_ids, skip_nodes=skip_nodes)
 
     def prev(
-        self, preorder: bool = False, skip: "Collection[Node]" = ()
+        self,
+        preorder: bool = False,
+        skip_ids: "Collection[int]" = (),
+        skip_nodes: "Collection[Node]" = (),
     ) -> "Zipper[NodeData, EdgeData]":
         """
         Move to the previous node in preorder or postorder.
 
         :param preorder: pass True to move in preorder (default is postorder)
-        :param skip: set of nodes whose subtrees should not be visited
+        :param skip_ids: set of ids of nodes whose subtree should be skipped
+        :param skip_nodes: set of nodes whose subtrees should be skipped
         :returns: updated zipper
         """
         if preorder:
-            return self._postorder(flip=True, skip=skip)
+            return self._postorder(flip=True, skip_ids=skip_ids, skip_nodes=skip_nodes)
         else:
-            return self._preorder(flip=True, skip=skip)
+            return self._preorder(flip=True, skip_ids=skip_ids, skip_nodes=skip_nodes)
 
     def zip(self) -> "Node[NodeData, EdgeData] | None":
         """Zip up to the root and return it."""

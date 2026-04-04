@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from immutables import Map
 import pytest
 
-
 tree_1 = (
     N("0")
     .add(N("1").add(N("2")).add(N("3").add(N("4")).add(N("5"))))

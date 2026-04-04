@@ -277,12 +277,14 @@ def test_next_prev():
     assert (zipper := zipper.next()).node is a
 
     zipper = a.unzip()
-    assert zipper.next(skip={a}).node is a
-    assert zipper.next(skip={b}).node is b
+    assert zipper.next(skip_nodes={a}).node is a
+    assert zipper.next(skip_nodes={Node("a").add(b).add(d)}).node is a
+    assert zipper.next(skip_ids={id(a)}).node is a
+    assert zipper.next(skip_nodes={b}).node is b
     zipper = a.unzip().down()
-    assert zipper.next(skip={d}).node is d
+    assert zipper.next(skip_nodes={d}).node is d
     zipper = a.unzip().down()
-    assert zipper.next(skip={e}).node is e
+    assert zipper.next(skip_nodes={e}).node is e
 
     zipper = a.unzip()
     assert (zipper := zipper.prev()).node is d
@@ -296,13 +298,13 @@ def test_next_prev():
     assert (zipper := zipper.prev()).node is a
 
     zipper = a.unzip()
-    assert zipper.prev(skip={a}).node is a
+    assert zipper.prev(skip_nodes={a}).node is a
     zipper = a.unzip().down()
-    assert zipper.prev(skip={b}).node is a
+    assert zipper.prev(skip_nodes={b}).node is a
     zipper = a.unzip().down(1).down()
-    assert zipper.prev(skip={e}).node is b
+    assert zipper.prev(skip_nodes={e}).node is b
     zipper = a.unzip().down(1).down().down(1)
-    assert zipper.prev(skip={g}).node is f
+    assert zipper.prev(skip_nodes={g}).node is f
 
     zipper = a.unzip()
     assert (zipper := zipper.next(preorder=True)).node is b
@@ -316,13 +318,13 @@ def test_next_prev():
     assert (zipper := zipper.next(preorder=True)).node is a
 
     zipper = a.unzip()
-    assert zipper.next(preorder=True, skip={a}).node is a
+    assert zipper.next(preorder=True, skip_nodes={a}).node is a
     zipper = a.unzip().down()
-    assert zipper.next(preorder=True, skip={b}).node is d
+    assert zipper.next(preorder=True, skip_nodes={b}).node is d
     zipper = a.unzip().down(1).down()
-    assert zipper.next(preorder=True, skip={e}).node is a
+    assert zipper.next(preorder=True, skip_nodes={e}).node is a
     zipper = a.unzip().down(1).down().down(1)
-    assert zipper.next(preorder=True, skip={g}).node is h
+    assert zipper.next(preorder=True, skip_nodes={g}).node is h
 
     zipper = a.unzip()
     assert (zipper := zipper.prev(preorder=True)).node is i
@@ -336,13 +338,13 @@ def test_next_prev():
     assert (zipper := zipper.prev(preorder=True)).node is a
 
     zipper = a.unzip()
-    assert zipper.prev(preorder=True, skip={a}).node is a
+    assert zipper.prev(preorder=True, skip_nodes={a}).node is a
     zipper = a.unzip().down()
-    assert zipper.prev(preorder=True, skip={b}).node is a
+    assert zipper.prev(preorder=True, skip_nodes={b}).node is a
     zipper = a.unzip().down(1).down()
-    assert zipper.prev(preorder=True, skip={e}).node is d
+    assert zipper.prev(preorder=True, skip_nodes={e}).node is d
     zipper = a.unzip().down(1).down().down(1)
-    assert zipper.prev(preorder=True, skip={g}).node is f
+    assert zipper.prev(preorder=True, skip_nodes={g}).node is f
 
 
 def test_str():
