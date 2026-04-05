@@ -150,6 +150,32 @@ def test_children():
     assert list(Zipper().children()) == []
 
 
+def test_siblings():
+    root = (
+        Node("a")
+        .add(Node("b").add(Node("d").add(Node("e"))))
+        .add(Node("c"))
+        .add(Node("f").add(Node("g")).add(Node("h")))
+    )
+
+    zipper = root.unzip()
+
+    assert list(zipper.siblings()) == []
+    assert list(zipper.down(0).siblings()) == [
+        zipper.down(1),
+        zipper.down(2),
+    ]
+    assert list(zipper.down(1).siblings()) == [
+        zipper.down(0),
+        zipper.down(2),
+    ]
+    assert list(zipper.down(2).siblings()) == [
+        zipper.down(0),
+        zipper.down(1),
+    ]
+    assert list(zipper.down().down().siblings()) == []
+
+
 def test_edit():
     left = Node("b").add(Node("d").add(Node("e")))
     right = Node("c")

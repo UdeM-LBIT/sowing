@@ -188,6 +188,15 @@ class Zipper(Generic[NodeData, EdgeData]):
         index %= len(self.parent.node.edges)
         return self.up().down(index)
 
+    def siblings(self) -> "Iterable[Zipper[NodeData, EdgeData]]":
+        """Iterate through all siblings of the pointed node from left to right."""
+        if self.parent is None or self.parent.node is None:
+            return ()
+
+        skip = self.index
+        up = self.up()
+        return (up.down(index) for index in range(len(up.node.edges)) if index != skip)
+
     def _preorder(
         self,
         flip: bool,
