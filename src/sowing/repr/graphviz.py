@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Callable
-from sowing.node import Node
+from sowing.node import Node, Edge
 from sowing import traversal
 
 escape_rules = str.maketrans({'"': r"\""})
@@ -25,30 +25,34 @@ def serialize_props(style: Style) -> list[str]:
     return [serialize_keyval(key, val) + ";" for key, val in style.items()]
 
 
-def default_node_style[NodeData](data: NodeData) -> Style:
-    return {"shape": "box", "style": "rounded", "label": str(data) if data else ""}
+def default_node_style[NodeData, EdgeData](node: Node[NodeData, EdgeData]) -> Style:
+    return {
+        "shape": "box",
+        "style": "rounded",
+        "label": str(node.data) if node.data else "",
+    }
 
 
-def default_edge_style[EdgeData](data: EdgeData) -> Style:
-    if data:
-        return {"label": str(data)}
+def default_edge_style[NodeData, EdgeData](edge: Edge[NodeData, EdgeData]) -> Style:
+    if edge.data:
+        return {"label": str(edge.data)}
     else:
         return {}
 
 
 def write[NodeData, EdgeData](
     root: Node[NodeData, EdgeData],
-    node_style: Callable[[NodeData], Style] = default_node_style,
-    edge_style: Callable[[EdgeData], Style] = default_edge_style,
+    node_style: Callable[[Node[NodeData, EdgeData]], Style] = default_node_style,
+    edge_style: Callable[[Edge[NodeData, EdgeData]], Style] = default_edge_style,
     graph_style: Style = {},
 ):
     """
     Represent a graph in the DOT format.
 
     :param root: graph to be represented
-    :param node_style: mapping from node data to a dictionary of GraphViz attributes to
+    :param node_style: mapping from each node to a dictionary of GraphViz attributes to
         assign to the node (see <https://graphviz.org/docs/nodes/> for possible values)
-    :param edge_style: mapping from edge data to a dictionary of GraphViz attributes to
+    :param edge_style: mapping from each edge to a dictionary of GraphViz attributes to
         assign to the edge (see <https://graphviz.org/docs/edges/> for possible values)
     :param graph_style: dictionary of GraphViz attributes for the whole graph
         (see <https://graphviz.org/docs/graph/> for possible values)
@@ -71,12 +75,12 @@ def write[NodeData, EdgeData](
         source = cursor.node
         assert source is not None
 
-        lines.append(f"{seq_id(source)}{serialize_style(node_style(source.data))}")
+        lines.append(f"{seq_id(source)}{serialize_style(node_style(source))}")
 
         for edge in source.edges:
             target = edge.node
             lines.append(
-                f"{seq_id(source)} -> {seq_id(target)}{serialize_style(edge_style(edge.data))}"
+                f"{seq_id(source)} -> {seq_id(target)}{serialize_style(edge_style(edge))}"
             )
 
     lines.append("}")
