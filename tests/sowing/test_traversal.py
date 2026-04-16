@@ -1,5 +1,5 @@
 from sowing.node import Node
-from sowing.traversal import depth, euler, leaves
+from sowing.traversal import depth, euler, leaves, topological
 from sowing import traversal
 from itertools import product
 from .test_node import _make_grid
@@ -51,7 +51,7 @@ def test_traverse():
     assert_same_nodes(leaves(a, reverse=True), (i, g, f, c))
 
 
-def test_traverse_repeats():
+def test_traverse_dag():
     c = Node("c")
     e = Node("e")
     g = Node("g")
@@ -118,7 +118,39 @@ def test_traverse_repeats():
     )
 
 
-def test_traverse_repeats_exp():
+def test_traverse_dag_topo():
+    c = Node("c")
+    e = Node("e")
+    g = Node("g")
+    h = Node("h")
+    f = Node("f").add(g).add(h)
+    d = Node("d").add(e).add(f)
+    b = Node("b").add(c).add(d)
+    i = Node("i").add(d)
+    k = Node("k").add(f)
+    m = Node("g")
+    l = Node("f").add(m).add(h)  # noqa: E741
+    j = Node("j").add(k).add(l)
+    a = Node("a").add(b).add(i).add(j)
+
+    #       a
+    #     / | \
+    #   b   i   j
+    #  / \ /   / \
+    # c   d   k   l
+    #    / \ /   / \
+    #   e   f   m  /
+    #      / \    /
+    #     g   h _/
+
+    visited = set()
+
+    for cursor in topological(a):
+        assert cursor.is_root() or cursor.up().node in visited
+        visited.add(cursor.node)
+
+
+def test_traverse_dag_exp():
     size = 30
     grid = _make_grid(size)
 

@@ -1,4 +1,5 @@
-from typing import cast, Any, Callable, Generator, Hashable, TypeVar, overload, Literal
+from collections.abc import Callable, Generator, Hashable, Iterable
+from typing import cast, Any, TypeVar, overload, Literal
 from functools import partial
 from inspect import signature
 from .node import Node
@@ -34,6 +35,13 @@ def depth(
 ) -> Traversal[NodeData, EdgeData, OutNodeData, OutEdgeData]:
     """
     Traverse a tree in depth-first order.
+
+    Note that (unique="id", reverse=True) yields a different order than what is obtained
+    through (unique="id") then reversing the list. The first case is equivalent to
+    taking the reverse of a normal depth-first ordering and filtering it to keep only
+    the first occurrence of each repeated node, whereas in the second case only the last
+    occurrence is kept. Hence, this second order actually yields a topological sorting
+    of the graph (see :func:`topological`).
 
     :param node: root node to start from
     :param preorder: pass True to visit parents before children (preorder),
@@ -86,6 +94,23 @@ def depth(
 
         if root_start and cursor.is_root():
             return
+
+
+def topological(
+    node: Node[NodeData, EdgeData] | None,
+) -> Iterable[Zipper[NodeData, EdgeData]]:
+    """
+    Traverse a tree in topological order.
+
+    In this traversal, each node is enumerated only after all of its parents have been
+    enumerated. Following the strategy described in Cormen et al., a postorder
+    depth-first search is performed, only keeping the first occurrence of all repeated
+    nodes, then reversed.
+
+    :param node: root node to start from
+    :returns: generator that yields nodes in the specified order
+    """
+    return reversed(list(depth(node, unique="id")))
 
 
 def euler(
