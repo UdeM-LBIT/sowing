@@ -8,7 +8,7 @@ version = "0.2.0"
 authors = [
     { name="Mattéo Delabre", email="git.matteo@delab.re" },
 ]
-description = "sowing"
+description = "Immutable tree data structure with utilities to build, traverse, edit, and serialize trees"
 readme = "README.md"
 requires-python = ">=3.12"
 classifiers = [
