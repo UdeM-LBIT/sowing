@@ -1,7 +1,8 @@
 from immutables import Map
+
+from sowing import traversal
 from sowing.node import Node
 from sowing.zipper import Zipper
-from sowing import traversal
 
 
 def quote_string(data: str) -> str:
@@ -25,14 +26,24 @@ def write_props(props: Map) -> str:
     )
 
 
-def write_node(cursor: Zipper[Map | None, Map | None]) -> Zipper[str, None]:
+def write_node(
+    cursor: Zipper[Map | None, Map | None],
+    pretty: bool,
+    indent: str,
+) -> Zipper[str, None]:
     node = cursor.node
     branch = cursor.data
+    indent *= cursor.depth
 
     if node.edges:
-        data = "(" + ",".join(edge.node.data for edge in node.edges) + ")"
+        children = (edge.node.data for edge in node.edges)
+
+        if pretty:
+            data = f"{indent}(\n{',\n'.join(children)}\n{indent})"
+        else:
+            data = "(" + ",".join(children) + ")"
     else:
-        data = ""
+        data = indent if pretty else ""
 
     clade = node.data
 
@@ -65,6 +76,21 @@ def write_node(cursor: Zipper[Map | None, Map | None]) -> Zipper[str, None]:
     return cursor.replace(node=Node(data), data=None)
 
 
-def write(root: Node[Map | None, Map | None]) -> str:
-    """Encode a tree into a Newick string."""
-    return traversal.fold(write_node, traversal.depth(root)).data + ";"
+def write(
+    root: Node[Map | None, Map | None],
+    pretty: bool = False,
+    indent: str = "  ",
+) -> str:
+    """
+    Encode a tree into a Newick string.
+
+    :param pretty: whether to print the tree with additional line breaks and
+        whitespace to improve readability (default: False)
+    :param indent: indentation string added to visually indicate nesting
+        in pretty-print mode
+    """
+    raw_result = traversal.fold(
+        lambda cursor: write_node(cursor, pretty, indent),
+        traversal.depth(root),
+    )
+    return raw_result.data + ";"

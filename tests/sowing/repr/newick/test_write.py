@@ -1,6 +1,7 @@
+from immutables import Map
+
 from sowing.node import Node
 from sowing.repr import newick
-from immutables import Map
 
 
 def test_topology():
@@ -240,3 +241,33 @@ def test_phylip():
         ":7.52973,((monkey:100.8593,cat:47.14069):20.59201,weasel:18.87953)"
         ":2.0946):3.87382,dog:25.46154);"
     )
+
+
+def test_pretty():
+    tree = (
+        Node(Map({"name": "a"}))
+        .add(
+            Node(Map({"name": "b"}))
+            .add(Node(Map({"name": "c"})))
+            .add(Node(Map({"name": "d"})))
+        )
+        .add(Node(Map({"name": "e"})))
+    )
+    assert newick.write(tree, pretty=True) == """\
+(
+  (
+    c,
+    d
+  )b,
+  e
+)a;\
+"""
+    assert newick.write(tree, pretty=True, indent="    ") == """\
+(
+    (
+        c,
+        d
+    )b,
+    e
+)a;\
+"""
